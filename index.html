@@ -1076,6 +1076,7 @@ footer {
     intro.classList.add('fade-out');
     setTimeout(() => {
       intro.style.display = 'none';
+      document.body.style.overflow = ''; // always clear here as fallback
       document.querySelectorAll('.r').forEach(el => {
         if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('in');
       });
@@ -1083,9 +1084,11 @@ footer {
   }
 
   document.body.style.overflow = 'hidden';
+  // clear overflow on transitionend AND as a hard fallback after max intro time
   intro.addEventListener('transitionend', () => {
     document.body.style.overflow = '';
   }, { once: true });
+  setTimeout(() => { document.body.style.overflow = ''; }, 4500); // hard fallback
 
   runIntro();
 })();
@@ -1944,7 +1947,7 @@ const io = new IntersectionObserver(entries => {
       io.unobserve(e.target);
     }
   });
-}, { threshold: 0.1 });
+}, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.r, .compare-card').forEach(el => io.observe(el));
 
 /* card mousemove glow */
