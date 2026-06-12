@@ -662,13 +662,17 @@ nav {
   background: var(--bg-1); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 32px;
   display: flex; flex-direction: column;
-  transition: border-color .2s;
+  transition: border-color .25s, box-shadow .25s, background .25s;
 }
-.price-card:hover { border-color: var(--border-hi); }
-.price-card.pro {
-  border-color: rgba(192,132,252,.4);
+.price-card:hover {
+  border-color: rgba(192,132,252,.45);
   background: linear-gradient(135deg, rgba(139,92,246,.09), rgba(232,121,249,.05));
-  box-shadow: 0 0 70px rgba(139,92,246,.14), 0 0 120px rgba(232,121,249,.07);
+  box-shadow: 0 0 60px rgba(139,92,246,.14), 0 0 100px rgba(232,121,249,.07);
+}
+.price-card.pro {
+  border-color: var(--border);
+  background: var(--bg-1);
+  box-shadow: none;
 }
 .price-tag {
   display: inline-flex; margin-bottom: 20px;
