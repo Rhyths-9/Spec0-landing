@@ -126,15 +126,6 @@ nav {
   overflow: hidden;
   border-bottom: 1px solid var(--border);
 }
-.hero-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-family: var(--mono); font-size: .72rem;
-  color: var(--body); border: 1px solid var(--border);
-  padding: 5px 14px; border-radius: 99px;
-  margin-bottom: 32px;
-  background: var(--surface);
-}
-.hero-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
 .hero h1 {
   font-size: clamp(2.6rem, 5.5vw, 4.2rem);
   font-weight: 700; letter-spacing: -.03em; line-height: 1.1;
@@ -1121,14 +1112,13 @@ footer {
 <header class="hero">
   <div class="hero-glow"></div>
   <div class="wrap">
-    <div class="hero-badge r"><span class="dot"></span>v0.4 · CLI & mock server open source</div>
-    <h1 class="r r2">Your internal APIs,<br><em>always queryable.</em></h1>
-    <p class="hero-sub r r3">Push OpenAPI specs once from CI. Cursor, Claude Code, and any MCP client retrieve exactly the operations they need — always current, never pasted.</p>
-    <div class="hero-actions r">
+    <h1 class="r">Your internal APIs,<br><em>always queryable.</em></h1>
+    <p class="hero-sub r r2">Push OpenAPI specs once from CI. Cursor, Claude Code, and any MCP client retrieve exactly the operations they need — always current, never pasted.</p>
+    <div class="hero-actions r r3">
       <a class="btn btn-primary" href="https://app.spec0.io">Start free →</a>
       <a class="btn btn-ghost" href="#how-it-works">How it works</a>
     </div>
-    <div class="install-cmd r" id="hero-cmd" onclick="copyInstall(this)">
+    <div class="install-cmd r" id="hero-cmd" onclick="copyInstall(this)" style="margin-left:auto;margin-right:auto">
       <span class="ps">$</span>
       <span class="cmd-txt" id="cmd-txt-1">npm i -g @spec0/cli && spec0 mcp install --client cursor</span>
       <button class="copy-btn" id="copy-btn-1">copy</button>
