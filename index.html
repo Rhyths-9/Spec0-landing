@@ -932,18 +932,14 @@ footer {
   z-index: 9999;
   background: #04040d;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 28px;
-  /* will be faded out by JS */
   transition: opacity .7s cubic-bezier(.4,0,.2,1);
 }
 #intro.fade-out {
   opacity: 0;
   pointer-events: none;
 }
-/* scanline sweep across the screen */
 #intro::before {
   content: '';
   position: absolute;
@@ -957,7 +953,6 @@ footer {
   );
   pointer-events: none;
 }
-/* slow moving scan beam */
 #intro::after {
   content: '';
   position: absolute;
@@ -965,8 +960,8 @@ footer {
   height: 120px;
   background: linear-gradient(180deg,
     transparent 0%,
-    rgba(124,126,255,.06) 40%,
-    rgba(124,126,255,.06) 60%,
+    rgba(124,126,255,.05) 40%,
+    rgba(124,126,255,.05) 60%,
     transparent 100%
   );
   animation: scan-beam 3s linear infinite;
@@ -977,96 +972,47 @@ footer {
   100% { top: 100%; }
 }
 
-/* the scramble word */
 .intro-word {
   display: flex;
   gap: 0;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: clamp(3.5rem, 12vw, 8rem);
-  font-weight: 600;
-  letter-spacing: -.04em;
+  font-size: clamp(2.2rem, 7vw, 4.8rem);
+  font-weight: 300;
+  letter-spacing: .06em;
   line-height: 1;
   user-select: none;
 }
 .intro-char {
   display: inline-block;
-  color: #7c7eff;
-  /* each char transitions independently */
-  transition: color .1s;
-  min-width: .55em;
+  color: rgba(124,126,255,.9);
+  min-width: .62em;
   text-align: center;
 }
-/* the "0" always accent-coloured */
-.intro-char.accent { color: #a78bfa; }
-/* scrambling state */
-.intro-char.scrambling { color: rgba(124,126,255,.45); }
-/* resolved state */
-.intro-char.resolved  { color: #e0e0ff; }
-.intro-char.accent.resolved { color: #a78bfa; }
+.intro-char.accent { color: rgba(167,139,250,.9); }
+.intro-char.scrambling { color: rgba(124,126,255,.3); }
+.intro-char.resolved  { color: rgba(220,220,255,.75); }
+.intro-char.accent.resolved { color: rgba(167,139,250,.85); }
 
-/* tagline below the word */
-.intro-tagline {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: clamp(.65rem, 2vw, .82rem);
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: rgba(124,126,255,.4);
-  opacity: 0;
-  transition: opacity .5s ease;
-}
-.intro-tagline.show { opacity: 1; }
-
-/* blinking cursor line under the word */
-.intro-cursor {
-  width: clamp(60px, 14vw, 120px);
-  height: 2px;
-  background: #7c7eff;
-  opacity: 0;
-  animation: cursor-blink .7s step-end infinite;
-  box-shadow: 0 0 12px rgba(124,126,255,.7);
-}
-.intro-cursor.show { opacity: 1; }
-@keyframes cursor-blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-/* corner decorations */
 .intro-corner {
   position: absolute;
-  width: 20px; height: 20px;
-  border-color: rgba(124,126,255,.25);
+  width: 16px; height: 16px;
+  border-color: rgba(124,126,255,.18);
   border-style: solid;
 }
-.intro-corner.tl { top: 28px; left: 28px; border-width: 1px 0 0 1px; }
-.intro-corner.tr { top: 28px; right: 28px; border-width: 1px 1px 0 0; }
-.intro-corner.bl { bottom: 28px; left: 28px; border-width: 0 0 1px 1px; }
-.intro-corner.br { bottom: 28px; right: 28px; border-width: 0 1px 1px 0; }
-
-/* version tag bottom centre */
-.intro-ver {
-  position: absolute;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: .65rem;
-  letter-spacing: .12em;
-  color: rgba(124,126,255,.25);
-  opacity: 0;
-  transition: opacity .4s ease;
-}
-.intro-ver.show { opacity: 1; }
+.intro-corner.tl { top: 24px; left: 24px; border-width: 1px 0 0 1px; }
+.intro-corner.tr { top: 24px; right: 24px; border-width: 1px 1px 0 0; }
+.intro-corner.bl { bottom: 24px; left: 24px; border-width: 0 0 1px 1px; }
+.intro-corner.br { bottom: 24px; right: 24px; border-width: 0 1px 1px 0; }
 </style>
 </head>
 <body>
 
 <!-- ───── INTRO OVERLAY ─────────────────────────────────── -->
 <div id="intro" aria-hidden="true">
-  <!-- corner brackets -->
   <div class="intro-corner tl"></div>
   <div class="intro-corner tr"></div>
   <div class="intro-corner bl"></div>
   <div class="intro-corner br"></div>
-
-  <!-- scramble word -->
   <div class="intro-word" id="intro-word">
     <span class="intro-char" data-final="s">s</span>
     <span class="intro-char" data-final="p">p</span>
@@ -1074,34 +1020,21 @@ footer {
     <span class="intro-char" data-final="c">c</span>
     <span class="intro-char accent" data-final="0">0</span>
   </div>
-
-  <!-- blinking cursor -->
-  <div class="intro-cursor" id="intro-cursor"></div>
-
-  <!-- tagline -->
-  <div class="intro-tagline" id="intro-tagline">MCP layer for your internal APIs</div>
-
-  <!-- version -->
-  <div class="intro-ver" id="intro-ver">v0.4 · open source</div>
 </div>
 
 <script>
 (function () {
-  /* skip animation if user prefers reduced motion */
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     document.getElementById('intro').style.display = 'none';
     return;
   }
 
   const CHARS = '+-=;*~#@$%^&!?<>/|\\[]{}0123456789';
-  const SCRAMBLE_DURATION = 380; // ms each char scrambles before resolving
-  const STAGGER           = 90;  // ms between each char starting
-  const HOLD_AFTER        = 900; // ms to hold completed word before fading
-  const chars = Array.from(document.querySelectorAll('.intro-char'));
-  const cursor = document.getElementById('intro-cursor');
-  const tagline = document.getElementById('intro-tagline');
-  const ver = document.getElementById('intro-ver');
-  const intro = document.getElementById('intro');
+  const SCRAMBLE_DURATION = 380;
+  const STAGGER           = 90;
+  const HOLD_AFTER        = 900;
+  const chars  = Array.from(document.querySelectorAll('.intro-char'));
+  const intro  = document.getElementById('intro');
 
   function randChar() {
     return CHARS[Math.floor(Math.random() * CHARS.length)];
@@ -1110,7 +1043,7 @@ footer {
   function scrambleChar(el, finalChar, duration) {
     return new Promise(resolve => {
       el.classList.add('scrambling');
-      const interval = 40; // ms between each random char swap
+      const interval = 40;
       const steps = Math.floor(duration / interval);
       let count = 0;
       const tick = setInterval(() => {
@@ -1128,56 +1061,36 @@ footer {
   }
 
   async function runIntro() {
-    // small delay before starting
     await new Promise(r => setTimeout(r, 200));
 
-    // show cursor immediately
-    cursor.classList.add('show');
-
-    // stagger each character's scramble
-    const promises = chars.map((el, i) => {
-      return new Promise(r => {
-        setTimeout(() => {
-          scrambleChar(el, el.dataset.final, SCRAMBLE_DURATION).then(r);
-        }, i * STAGGER);
-      });
-    });
-
+    const promises = chars.map((el, i) =>
+      new Promise(r => setTimeout(() =>
+        scrambleChar(el, el.dataset.final, SCRAMBLE_DURATION).then(r),
+      i * STAGGER))
+    );
     await Promise.all(promises);
 
-    // all resolved — show tagline + version
-    tagline.classList.add('show');
-    ver.classList.add('show');
-
-    // hold, then do a second scramble pass (the "glitch" re-scramble)
     await new Promise(r => setTimeout(r, 500));
 
-    // quick glitch: randomise all chars for 180ms then snap back
+    // glitch pass
     const glitchTick = setInterval(() => {
-      chars.forEach(el => {
-        if (Math.random() > 0.5) el.textContent = randChar();
-      });
+      chars.forEach(el => { if (Math.random() > 0.5) el.textContent = randChar(); });
     }, 40);
     await new Promise(r => setTimeout(r, 180));
     clearInterval(glitchTick);
     chars.forEach(el => { el.textContent = el.dataset.final; });
 
-    // hold the final state
     await new Promise(r => setTimeout(r, HOLD_AFTER));
 
-    // fade out intro, reveal page
     intro.classList.add('fade-out');
     setTimeout(() => {
       intro.style.display = 'none';
-      // trigger scroll reveal animations now that page is visible
       document.querySelectorAll('.r').forEach(el => {
-        const rect = el.getBoundingClientRect();
-        if (rect.top < window.innerHeight) el.classList.add('in');
+        if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('in');
       });
     }, 720);
   }
 
-  // Lock scroll during intro
   document.body.style.overflow = 'hidden';
   intro.addEventListener('transitionend', () => {
     document.body.style.overflow = '';
