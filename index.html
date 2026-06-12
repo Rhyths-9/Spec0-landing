@@ -229,21 +229,35 @@ nav {
 }
 /* ─── LOGO STRIP ─────────────────────────────────────────── */
 .strip {
-  padding: 36px 0;
+  padding: 44px 0;
   border-bottom: 1px solid var(--border);
 }
-.strip-label { font-family: var(--mono); font-size: .68rem; color: var(--muted); letter-spacing: .1em; text-align: center; margin-bottom: 22px; text-transform: uppercase; }
+.strip-label {
+  font-family: var(--mono); font-size: .68rem; color: var(--muted);
+  letter-spacing: .1em; text-align: center; margin-bottom: 32px;
+  text-transform: uppercase;
+}
 .strip-logos {
   display: flex; justify-content: center; align-items: center;
-  gap: 32px; flex-wrap: wrap;
+  gap: 52px; flex-wrap: wrap;
 }
-.logo-pill {
-  font-family: var(--mono); font-size: .78rem; font-weight: 500;
-  color: var(--muted); padding: 6px 16px;
-  border: 1px solid var(--border); border-radius: 6px;
-  transition: color .15s, border-color .15s;
+.logo-item {
+  display: flex; align-items: center; gap: 11px;
+  color: rgba(180,182,210,.55);
+  transition: color .2s;
+  cursor: default;
 }
-.logo-pill:hover { color: var(--ink); border-color: var(--border-hi); }
+.logo-item:hover { color: rgba(210,212,240,.85); }
+.logo-item .li-icon {
+  width: 28px; height: 28px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: .7; transition: opacity .2s;
+}
+.logo-item:hover .li-icon { opacity: 1; }
+.logo-item .li-name {
+  font-family: var(--sans); font-size: 1.05rem; font-weight: 500;
+  letter-spacing: -.01em; white-space: nowrap;
+}
 
 /* ─── COMPARISON ─────────────────────────────────────────── */
 .compare-section { padding: 96px 0; border-bottom: 1px solid var(--border); }
@@ -811,6 +825,13 @@ footer {
   .api-table th, .api-table td { padding: 8px 6px; font-size: .68rem; }
 
   /* logo strip */
+  .strip { padding: 32px 0; }
+  .strip-logos { gap: 28px; }
+  .logo-item .li-name { font-size: .88rem; }
+  .logo-item .li-icon { width: 22px; height: 22px; }
+  .logo-item .li-icon svg { width: 22px; height: 22px; }
+
+  /* logo strip */
   .strip { padding: 28px 0; }
   .strip-logos { gap: 8px; }
   .logo-pill { font-size: .7rem; padding: 5px 11px; }
@@ -1188,12 +1209,62 @@ footer {
   <div class="wrap">
     <div class="strip-label">Queryable by any MCP client</div>
     <div class="strip-logos">
-      <span class="logo-pill">Cursor</span>
-      <span class="logo-pill">Claude Code</span>
-      <span class="logo-pill">Claude Desktop</span>
-      <span class="logo-pill">Continue.dev</span>
-      <span class="logo-pill">Cline</span>
-      <span class="logo-pill dim">+ any MCP client</span>
+
+      <!-- Cursor -->
+      <div class="logo-item">
+        <div class="li-icon">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="rgba(255,255,255,.08)"/>
+            <path d="M16 6L26 11.5V20.5L16 26L6 20.5V11.5L16 6Z" stroke="rgba(200,202,255,.8)" stroke-width="1.5" fill="none"/>
+            <path d="M16 6L16 26" stroke="rgba(200,202,255,.5)" stroke-width="1.5"/>
+            <path d="M6 11.5L26 11.5" stroke="rgba(200,202,255,.5)" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <span class="li-name">Cursor</span>
+      </div>
+
+      <!-- Claude Code -->
+      <div class="logo-item">
+        <div class="li-icon">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="rgba(255,255,255,.08)"/>
+            <!-- Anthropic / Claude stylised mark -->
+            <path d="M10 22L16 10L22 22" stroke="rgba(200,202,255,.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M12.5 18H19.5" stroke="rgba(200,202,255,.5)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="li-name">Claude Code</span>
+      </div>
+
+      <!-- Windsurf -->
+      <div class="logo-item">
+        <div class="li-icon">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="rgba(255,255,255,.08)"/>
+            <!-- wave / wind shape -->
+            <path d="M7 12C10 9 14 9 16 12C18 15 22 15 25 12" stroke="rgba(200,202,255,.8)" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+            <path d="M7 17C10 14 14 14 16 17C18 20 22 20 25 17" stroke="rgba(200,202,255,.55)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <path d="M10 22C12.5 20 15.5 20 17 22C18.5 24 21 24 23 22" stroke="rgba(200,202,255,.3)" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+        <span class="li-name">Windsurf</span>
+      </div>
+
+      <!-- Antigravity -->
+      <div class="logo-item">
+        <div class="li-icon">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="rgba(255,255,255,.08)"/>
+            <!-- upward arrow / anti-gravity motif -->
+            <path d="M16 24V10" stroke="rgba(200,202,255,.8)" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M10 16L16 10L22 16" stroke="rgba(200,202,255,.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <!-- orbit ring -->
+            <ellipse cx="16" cy="16" rx="9" ry="4" stroke="rgba(200,202,255,.3)" stroke-width="1.2" fill="none"/>
+          </svg>
+        </div>
+        <span class="li-name">Antigravity</span>
+      </div>
+
     </div>
   </div>
 </div>
