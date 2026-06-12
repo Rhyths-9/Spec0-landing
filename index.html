@@ -4,31 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>spec0 — Push your specs once. Every agent queries them live.</title>
+<meta name="description" content="spec0 is the MCP layer for your internal APIs. Push OpenAPI specs from CI; Cursor, Claude Code and any MCP client retrieve just the operations they need — always current.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* ─── TOKENS ─────────────────────────────────────────────── */
+/* ─── TOKENS ──────────────────────────────────── */
 :root {
-  --bg:       #080810;
-  --bg-1:     #0d0d1a;
-  --bg-2:     #111122;
-  --surface:  rgba(255,255,255,.04);
-  --border:   rgba(255,255,255,.07);
-  --border-hi:rgba(255,255,255,.13);
-  --ink:      #f0f0ff;
-  --body:     #7b7d9a;
-  --muted:    #42445a;
-  --primary:  #5b5ef7;
-  --primary-2:#7c7eff;
-  --green:    #22d3a0;
-  --red:      #f05a5a;
-  --amber:    #f0a22a;
-  --mono:     'JetBrains Mono', ui-monospace, monospace;
-  --sans:     'Inter', system-ui, sans-serif;
-  --radius:   12px;
+  --bg:          #070711;
+  --bg-2:        #0d0e1d;
+  --bg-3:        #121326;
+  --surface:     rgba(255,255,255,.042);
+  --border:      rgba(255,255,255,.072);
+  --border-hi:   rgba(255,255,255,.13);
+  --ink:         #f1f5f9;
+  --body:        #8892b4;
+  --muted:       #4a5272;
+  --primary:     #6366f1;
+  --primary-hi:  #818cf8;
+  --violet:      #a78bfa;
+  --green:       #10b981;
+  --red:         #f43f5e;
+  --amber:       #f59e0b;
+  --cyan:        #06b6d4;
+  --sans:        'Plus Jakarta Sans', system-ui, sans-serif;
+  --mono:        'JetBrains Mono', ui-monospace, monospace;
+  --r:           14px;
+  --r-lg:        20px;
 }
-/* ─── RESET ──────────────────────────────────────────────── */
+
+/* ─── RESET ───────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
@@ -40,902 +45,623 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
-a { color: inherit; text-decoration: none; }
-::selection { background: rgba(91,94,247,.35); color: var(--ink); }
+a { color: var(--primary-hi); text-decoration: none; }
+a:hover { color: var(--violet); }
+::selection { background: rgba(99,102,241,.35); color: #e0e7ff; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 4px; }
+h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; letter-spacing: -.025em; }
+h1 { font-size: clamp(2.5rem, 5.2vw, 4rem); font-weight: 800; }
+h2 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); font-weight: 700; }
+h3 { font-size: 1.1rem; font-weight: 700; letter-spacing: -.015em; }
+code, pre { font-family: var(--mono); }
 
-/* ─── GRID NOISE ─────────────────────────────────────────── */
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-}
-/* Hero glow */
-.hero-glow {
-  position: absolute;
-  top: -200px; left: 50%; transform: translateX(-50%);
-  width: 900px; height: 600px;
-  background: radial-gradient(ellipse, rgba(91,94,247,.18) 0%, transparent 70%);
-  pointer-events: none; z-index: 0;
-}
-/* ─── LAYOUT ─────────────────────────────────────────────── */
-.wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 1; }
-.wrap-sm { max-width: 760px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 1; }
+/* ─── LAYOUT ──────────────────────────────────── */
+.wrap    { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.wrap-sm { max-width: 780px;  margin: 0 auto; padding: 0 24px; }
+section  { padding: 100px 0; }
 
-/* ─── NAV ────────────────────────────────────────────────── */
+/* ─── GRADIENT TEXT ───────────────────────────── */
+.g-text {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 40%, #c084fc 75%, #f472b6 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.g-text-cyan {
+  background: linear-gradient(135deg, #06b6d4 0%, #818cf8 60%, #a78bfa 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── EYEBROW ─────────────────────────────────── */
+.eyebrow {
+  font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--primary-hi);
+  display: inline-flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.eyebrow::before { content: ''; width: 24px; height: 2px; background: linear-gradient(90deg, var(--primary), var(--violet)); border-radius: 2px; flex-shrink: 0; }
+
+/* ─── BUTTONS ─────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--sans); font-size: .9rem; font-weight: 700;
+  padding: 12px 22px; border-radius: 10px; border: 1px solid transparent;
+  cursor: pointer; transition: all .18s cubic-bezier(.4,0,.2,1);
+  text-decoration: none; white-space: nowrap;
+}
+.btn:hover { text-decoration: none; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+  color: #fff; border-color: rgba(99,102,241,.4);
+  box-shadow: 0 0 28px rgba(99,102,241,.35), 0 4px 16px rgba(0,0,0,.35);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 44px rgba(99,102,241,.5), 0 8px 24px rgba(0,0,0,.4);
+  color: #fff;
+}
+.btn-ghost {
+  background: rgba(255,255,255,.05); color: var(--ink);
+  border-color: var(--border); backdrop-filter: blur(12px);
+}
+.btn-ghost:hover {
+  background: rgba(255,255,255,.09); border-color: var(--border-hi);
+  color: var(--ink); transform: translateY(-1px);
+}
+
+/* ─── CMD PILL ────────────────────────────────── */
+.cmd {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(2,3,14,.8); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px; padding: 13px 18px;
+  font-family: var(--mono); font-size: .82rem; color: #c7d2fe;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+  transition: border-color .2s;
+  cursor: pointer;
+}
+.cmd:hover { border-color: rgba(99,102,241,.4); }
+.cmd .ps { color: #6ee7b7; flex-shrink: 0; }
+.cmd .txt { flex: 1; white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+.cmd .txt::-webkit-scrollbar { display: none; }
+.cmd .copy-btn {
+  flex-shrink: 0; font-family: var(--sans); font-size: .72rem; font-weight: 600;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+  color: var(--body); padding: 5px 12px; border-radius: 7px;
+  cursor: pointer; transition: all .15s;
+}
+.cmd .copy-btn:hover { background: rgba(255,255,255,.15); color: var(--ink); }
+.cmd .copy-btn.ok { background: rgba(16,185,129,.15); border-color: rgba(16,185,129,.35); color: var(--green); }
+
+/* ─── AMBIENT ─────────────────────────────────── */
+#bg-canvas {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+}
+body > *:not(#bg-canvas) { position: relative; z-index: 1; }
+
+/* ─── NAV ─────────────────────────────────────── */
 nav {
   position: sticky; top: 0; z-index: 100;
   border-bottom: 1px solid var(--border);
-  background: rgba(8,8,16,.85);
-  backdrop-filter: blur(18px);
+}
+nav::before {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(7,7,17,.82);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
 }
 .nav-inner {
-  display: flex; align-items: center; height: 56px; gap: 0;
+  position: relative; display: flex; align-items: center;
+  height: 62px; gap: 32px;
 }
-.nav-logo {
-  font-family: var(--mono);
-  font-size: .88rem; font-weight: 500;
-  color: var(--ink);
-  padding-right: 36px;
-  border-right: 1px solid var(--border);
-  margin-right: 28px;
-  letter-spacing: .02em;
+.logo {
+  font-size: 1.22rem; font-weight: 800; letter-spacing: -.03em;
+  color: var(--ink); text-decoration: none; flex-shrink: 0;
 }
-.nav-logo span { color: var(--primary-2); }
-.nav-links { display: flex; gap: 24px; font-size: .82rem; font-weight: 500; color: var(--body); }
-.nav-links a:hover { color: var(--ink); }
-.nav-right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
-.nav-signin { font-size: .82rem; color: var(--body); }
-.nav-signin:hover { color: var(--ink); }
-.btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: .82rem; font-weight: 600;
-  padding: 8px 18px; border-radius: 8px; border: 1px solid transparent;
-  cursor: pointer; transition: all .17s ease;
-  font-family: var(--sans);
-}
-.btn-primary {
-  background: var(--primary); color: #fff;
-  box-shadow: 0 0 20px rgba(91,94,247,.3);
-}
-.btn-primary:hover { background: var(--primary-2); transform: translateY(-1px); box-shadow: 0 0 32px rgba(91,94,247,.45); }
-.btn-ghost { background: var(--surface); color: var(--ink); border-color: var(--border); }
-.btn-ghost:hover { border-color: var(--border-hi); background: rgba(255,255,255,.07); }
+.logo span { color: var(--primary-hi); }
+.logo:hover { color: var(--ink); text-decoration: none; }
+.nav-links { display: flex; gap: 28px; font-size: .88rem; font-weight: 600; }
+.nav-links a { color: var(--body); transition: color .15s; }
+.nav-links a:hover { color: var(--ink); text-decoration: none; }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.nav-signin { font-size: .88rem; font-weight: 600; color: var(--body); transition: color .15s; }
+.nav-signin:hover { color: var(--ink); text-decoration: none; }
+.nav-right .btn { padding: 9px 18px; font-size: .84rem; }
 
-/* ─── SECTION LABEL ──────────────────────────────────────── */
-.section-label {
-  font-family: var(--mono);
-  font-size: .72rem; font-weight: 500;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--muted);
-  display: inline-flex; align-items: center; gap: 10px;
-  margin-bottom: 40px;
-}
-.section-label::before,
-.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-.section-label.center { display: flex; }
-
-/* ─── HERO ───────────────────────────────────────────────── */
+/* ─── HERO ─────────────────────────────────────── */
 .hero {
-  padding: 96px 0 80px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
+  padding: 80px 0 96px;
   border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.hero-layout {
+  display: grid; grid-template-columns: 1.1fr .9fr;
+  gap: 72px; align-items: center;
 }
 .hero-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-family: var(--mono); font-size: .72rem;
-  color: var(--body); border: 1px solid var(--border);
-  padding: 5px 14px; border-radius: 99px;
-  margin-bottom: 32px;
-  background: var(--surface);
-}
-.hero-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
-.hero h1 {
-  font-size: clamp(2.6rem, 5.5vw, 4.2rem);
-  font-weight: 700; letter-spacing: -.03em; line-height: 1.1;
-  color: var(--ink);
-  max-width: 820px; margin: 0 auto;
-}
-.hero h1 em { font-style: normal; color: var(--primary-2); }
-.hero-sub {
-  font-size: 1.05rem; max-width: 520px; margin: 22px auto 0;
-  color: var(--body); line-height: 1.7;
-}
-.hero-actions {
-  display: flex; align-items: center; justify-content: center; gap: 12px;
-  margin-top: 36px; flex-wrap: wrap;
-}
-.hero-actions .btn { font-size: .88rem; padding: 11px 22px; }
-/* install cmd */
-.install-cmd {
-  display: flex; align-items: center; gap: 10px;
-  background: rgba(2,2,14,.7);
-  border: 1px solid var(--border);
-  border-radius: 10px; padding: 11px 16px;
-  font-family: var(--mono); font-size: .78rem; color: #a5b4fc;
-  margin: 20px auto 0; max-width: 520px;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: .76rem; font-weight: 700; letter-spacing: .04em;
+  color: var(--primary-hi);
+  background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.28);
+  padding: 6px 14px; border-radius: 99px; margin-bottom: 28px;
   backdrop-filter: blur(8px);
-  cursor: pointer;
-  transition: border-color .2s;
 }
-.install-cmd:hover { border-color: rgba(91,94,247,.4); }
-.install-cmd .ps { color: var(--green); flex-shrink: 0; }
-.install-cmd .cmd-txt { flex: 1; text-align: left; white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
-.install-cmd .cmd-txt::-webkit-scrollbar { display: none; }
-.copy-btn {
-  font-family: var(--sans); font-size: .7rem; font-weight: 600;
-  color: var(--muted); background: none; border: 1px solid var(--border);
-  padding: 4px 10px; border-radius: 6px; cursor: pointer;
-  transition: all .15s; white-space: nowrap; flex-shrink: 0;
+.hero-badge .live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 8px var(--green);
 }
-.copy-btn:hover { color: var(--ink); border-color: var(--border-hi); }
-.copy-btn.ok { color: var(--green); border-color: rgba(34,211,160,.3); }
-/* product screenshot */
-.hero-screen {
-  margin: 56px auto 0;
-  max-width: 960px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.04), 0 40px 80px -20px rgba(0,0,0,.6), 0 0 80px rgba(91,94,247,.08);
-  background: var(--bg-1);
+.hero h1 { margin-bottom: 22px; }
+.hero .sub {
+  font-size: 1.12rem; line-height: 1.72; color: var(--body);
+  max-width: 500px; margin-bottom: 36px;
 }
-.screen-bar {
-  display: flex; align-items: center; gap: 7px;
-  padding: 11px 16px; border-bottom: 1px solid var(--border);
-  background: var(--bg-2);
+.hero-actions { display: flex; flex-direction: column; gap: 14px; }
+.hero-actions .row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.hero-actions .hint { font-size: .8rem; color: var(--muted); }
+.hero-icp {
+  margin-top: 28px;
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(99,102,241,.07); border: 1px solid rgba(99,102,241,.18);
+  border-left: 3px solid var(--primary);
+  border-radius: 12px; padding: 14px 18px;
+  font-size: .88rem; max-width: 500px;
 }
-.screen-bar i { width: 10px; height: 10px; border-radius: 50%; display: block; }
-.screen-bar i:nth-child(1) { background: #ff5f57; }
-.screen-bar i:nth-child(2) { background: #febc2e; }
-.screen-bar i:nth-child(3) { background: #28c840; }
-.screen-bar .url {
-  margin-left: 10px; font-family: var(--mono); font-size: .72rem;
-  color: var(--muted); background: rgba(255,255,255,.04);
-  padding: 3px 12px; border-radius: 6px; border: 1px solid var(--border);
-}
-.screen-body {
-  display: grid; grid-template-columns: 220px 1fr;
-  font-family: var(--mono); font-size: .75rem;
-  min-height: 340px;
-}
-.screen-sidebar {
-  border-right: 1px solid var(--border);
-  padding: 20px 0;
-}
-.sidebar-section { font-size: .64rem; letter-spacing: .1em; color: var(--muted); padding: 0 16px 8px; }
-.sidebar-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 16px; color: var(--body); font-size: .74rem; cursor: pointer;
-}
-.sidebar-item.active { background: rgba(91,94,247,.12); color: var(--ink); border-left: 2px solid var(--primary); }
-.sidebar-item .si { color: var(--muted); font-size: .65rem; }
-.screen-main { padding: 20px 24px; }
-.sm-title { color: var(--ink); font-size: .88rem; margin-bottom: 16px; }
-.api-table { width: 100%; border-collapse: collapse; }
-.api-table th { color: var(--muted); font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
-.api-table td { padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,.03); color: var(--body); font-size: .74rem; }
-.api-table tr:hover td { background: rgba(255,255,255,.02); }
-.api-table .name { color: var(--ink); }
-.api-table .ver { color: var(--primary-2); }
-.api-table .status {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: .65rem; padding: 3px 8px; border-radius: 4px;
-}
-.status-live { background: rgba(34,211,160,.1); color: var(--green); border: 1px solid rgba(34,211,160,.2); }
-.status-none { background: rgba(255,255,255,.05); color: var(--muted); border: 1px solid var(--border); }
-.status-live::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 5px var(--green); }
-.mcp-badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: .65rem; color: var(--primary-2);
-  background: rgba(91,94,247,.1); border: 1px solid rgba(91,94,247,.2);
-  padding: 3px 8px; border-radius: 4px; cursor: pointer;
-}
-/* ─── LOGO STRIP ─────────────────────────────────────────── */
-.strip {
-  padding: 36px 0;
-  border-bottom: 1px solid var(--border);
-}
-.strip-label { font-family: var(--mono); font-size: .68rem; color: var(--muted); letter-spacing: .1em; text-align: center; margin-bottom: 22px; text-transform: uppercase; }
-.strip-logos {
-  display: flex; justify-content: center; align-items: center;
-  gap: 32px; flex-wrap: wrap;
-}
-.logo-pill {
-  font-family: var(--mono); font-size: .78rem; font-weight: 500;
-  color: var(--muted); padding: 6px 16px;
-  border: 1px solid var(--border); border-radius: 6px;
-  transition: color .15s, border-color .15s;
-}
-.logo-pill:hover { color: var(--ink); border-color: var(--border-hi); }
+.hero-icp strong { color: var(--ink); }
 
-/* ─── COMPARISON ─────────────────────────────────────────── */
-.compare-section { padding: 96px 0; border-bottom: 1px solid var(--border); }
-.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 48px; }
-.compare-card {
-  background: var(--bg-1); border: 1px solid var(--border);
-  border-radius: var(--radius); overflow: hidden;
+/* ─── TERMINAL ────────────────────────────────── */
+.terminal {
+  background: rgba(3,4,18,.85);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.04) inset,
+    0 24px 64px -16px rgba(0,0,0,.6),
+    0 0 80px rgba(99,102,241,.12);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  transition: box-shadow .3s, border-color .3s;
 }
-.compare-card.win { border-color: rgba(91,94,247,.35); box-shadow: 0 0 40px rgba(91,94,247,.1); }
-.cc-head { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
-.cc-tag { font-family: var(--mono); font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-.compare-card.win .cc-tag { color: var(--primary-2); }
-.cc-title { font-size: 1rem; font-weight: 600; color: var(--ink); }
-.token-bar { margin-top: 14px; }
-.token-num { font-family: var(--mono); font-size: .75rem; font-weight: 600; }
+.terminal:hover {
+  border-color: rgba(99,102,241,.28);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04) inset, 0 24px 64px -16px rgba(0,0,0,.6), 0 0 100px rgba(99,102,241,.2);
+}
+.term-bar {
+  display: flex; align-items: center; gap: 7px;
+  padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.025);
+}
+.term-bar .dots { display: flex; gap: 6px; }
+.term-bar .dot { width: 11px; height: 11px; border-radius: 50%; }
+.term-bar .dot:nth-child(1) { background: #fb7185; }
+.term-bar .dot:nth-child(2) { background: #fbbf24; }
+.term-bar .dot:nth-child(3) { background: #34d399; }
+.term-bar .label { margin-left: 10px; font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+.term-bar .live {
+  margin-left: auto; font-family: var(--mono); font-size: .68rem; font-weight: 600;
+  color: var(--green); display: flex; align-items: center; gap: 6px;
+}
+.term-bar .live::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 6px var(--green);
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.term-body {
+  padding: 22px; font-family: var(--mono); font-size: .82rem; line-height: 1.9;
+  color: #94a3b8; min-height: 160px;
+}
+.term-body .c-cmd { color: #e0e7ff; }
+.term-body .c-ok  { color: #6ee7b7; }
+.term-body .c-dim { color: #475569; }
+.term-body .c-arr { color: #a5b4fc; }
+.term-cap {
+  padding: 16px 22px; border-top: 1px solid rgba(255,255,255,.07);
+  font-size: .82rem; color: #64748b; line-height: 1.65;
+}
+.term-cap code {
+  color: #c7d2fe; font-size: .77rem;
+  background: rgba(255,255,255,.07); padding: 2px 7px; border-radius: 5px;
+}
+
+/* ─── CLIENTS ─────────────────────────────────── */
+.clients {
+  padding: 40px 0; border-bottom: 1px solid var(--border);
+}
+.clients-label {
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); text-align: center; margin-bottom: 24px;
+}
+.clients-row {
+  display: flex; justify-content: center; align-items: center;
+  gap: 10px; flex-wrap: wrap;
+}
+.client-pill {
+  font-size: .84rem; font-weight: 600;
+  color: var(--muted); padding: 7px 18px;
+  border: 1px solid var(--border); border-radius: 99px;
+  background: var(--surface);
+  transition: color .2s, border-color .2s, background .2s;
+}
+.client-pill:hover { color: var(--ink); border-color: rgba(99,102,241,.4); background: rgba(99,102,241,.08); }
+
+/* ─── SECTION HEADER ──────────────────────────── */
+.sec-hdr { text-align: center; max-width: 640px; margin: 0 auto 60px; }
+.sec-hdr .eyebrow { justify-content: center; }
+.sec-hdr h2 { margin-bottom: 16px; }
+.sec-hdr p { font-size: 1rem; line-height: 1.7; }
+
+/* ─── COMPARISON ──────────────────────────────── */
+.compare { border-bottom: 1px solid var(--border); }
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.compare-card {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--r-lg); overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+}
+.compare-card:hover { transform: translateY(-4px); }
+.compare-card.win {
+  border-color: rgba(99,102,241,.35);
+  box-shadow: 0 0 60px rgba(99,102,241,.12);
+}
+.compare-card.win:hover { box-shadow: 0 12px 40px rgba(0,0,0,.3), 0 0 80px rgba(99,102,241,.2); }
+.cc-head { padding: 22px 26px 18px; border-bottom: 1px solid var(--border); }
+.cc-tag {
+  font-family: var(--mono); font-size: .65rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 8px;
+}
+.compare-card.win .cc-tag { color: var(--primary-hi); }
+.cc-head h3 { font-size: 1.05rem; }
+.token-row { margin-top: 16px; }
+.token-num { font-family: var(--mono); font-size: .8rem; font-weight: 700; }
 .token-num.bad { color: var(--red); }
 .token-num.good { color: var(--green); }
-.t-bar { height: 3px; background: var(--border); border-radius: 99px; margin-top: 8px; overflow: hidden; }
-.t-fill { height: 100%; border-radius: 99px; width: 0; transition: width 1.2s cubic-bezier(.22,1,.36,1); }
-.t-fill.bad { background: var(--red); }
-.t-fill.good { background: var(--green); }
+.token-bar {
+  height: 5px; background: rgba(255,255,255,.08);
+  border-radius: 99px; margin-top: 8px; overflow: hidden;
+}
+.token-fill { height: 100%; border-radius: 99px; width: 0; transition: width 1.2s cubic-bezier(.22,1,.36,1); }
+.token-fill.bad  { background: linear-gradient(90deg, var(--red), #f43f5e); }
+.token-fill.good { background: linear-gradient(90deg, var(--green), #10b981); }
 .cc-code {
-  padding: 20px 24px; font-family: var(--mono);
-  font-size: .73rem; line-height: 1.75; color: var(--body);
-  flex: 1;
+  padding: 20px 26px; font-family: var(--mono); font-size: .74rem;
+  line-height: 1.78; color: #94a3b8; flex: 1;
 }
 .cc-code .ky { color: #a5b4fc; }
 .cc-code .vl { color: #6ee7b7; }
-.cc-code .cm { color: var(--muted); }
+.cc-code .cm { color: #475569; }
 .cc-code .hl { color: var(--ink); }
-.cc-foot { padding: 14px 24px; border-top: 1px solid var(--border); font-size: .8rem; }
-.compare-card.win .cc-foot { color: var(--ink); }
-.compare-cta { display: flex; align-items: center; gap: 16px; margin-top: 40px; flex-wrap: wrap; }
-.compare-cta .note { font-family: var(--mono); font-size: .75rem; color: var(--muted); }
-
-/* ─── FEATURES ───────────────────────────────────────────── */
-.features-section { padding: 96px 0; border-bottom: 1px solid var(--border); }
-
-.bento-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.75fr;
-  grid-template-rows: 480px 400px 180px;
-  gap: 10px;
-  margin-top: 48px;
+.cc-foot {
+  padding: 14px 26px; border-top: 1px solid var(--border);
+  font-size: .82rem; color: var(--body);
 }
-.bento-grid .feat-card:nth-child(1) { grid-column: 1; grid-row: 1; }
-.bento-grid .feat-card:nth-child(2) { grid-column: 2; grid-row: 1; }
-.bento-grid .feat-card:nth-child(3) { grid-column: 1; grid-row: 2; }
-.bento-grid .feat-card:nth-child(4) { grid-column: 2; grid-row: 2; }
-.bento-grid .feat-card:nth-child(5) {
-  grid-column: 1 / -1; grid-row: 3;
-  flex-direction: row; align-items: stretch; height: 180px;
-}
-.bento-grid .feat-card:nth-child(5) .fc-visual { flex: 1; border-right: 1px solid var(--border); border-top: none; padding: 0 40px; justify-content: center; align-items: center; }
-.bento-grid .feat-card:nth-child(5) .fc-text { flex: 0 0 340px; border-top: none; padding: 28px 32px; display: flex; flex-direction: column; justify-content: center; }
+.compare-card.win .cc-foot { color: var(--ink); font-weight: 600; }
+.compare-cta { display: flex; align-items: center; gap: 16px; margin-top: 44px; flex-wrap: wrap; justify-content: center; }
+.compare-cta .note { font-family: var(--mono); font-size: .78rem; color: var(--muted); }
 
-/* card shell */
+/* ─── HOW IT WORKS ────────────────────────────── */
+.how { border-bottom: 1px solid var(--border); }
+.steps-row {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  overflow: hidden; margin-bottom: 40px;
+}
+.step-cell {
+  background: var(--bg); padding: 38px 34px;
+  transition: background .2s;
+}
+.step-cell:hover { background: var(--bg-2); }
+.step-num {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .08em;
+  color: var(--muted); margin-bottom: 20px;
+}
+.step-num::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.step-num span {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.25);
+  color: var(--primary-hi); font-weight: 700; font-size: .8rem;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.step-cell h3 { font-size: 1rem; margin-bottom: 10px; }
+.step-cell p { font-size: .86rem; line-height: 1.65; }
+.step-cell .sc {
+  background: rgba(2,4,18,.8); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px; padding: 14px 16px; margin-top: 16px;
+  font-family: var(--mono); font-size: .73rem; line-height: 1.85; color: #94a3b8;
+}
+.step-cell .sc .g { color: #6ee7b7; }
+.step-cell .sc .p { color: #a5b4fc; }
+.step-cell .sc .d { color: #475569; }
+.step-cell blockquote {
+  font-style: italic; font-size: .88rem; color: var(--ink);
+  background: rgba(99,102,241,.07); border-left: 3px solid var(--primary);
+  padding: 12px 16px; border-radius: 9px; margin-top: 16px;
+  font-family: var(--sans);
+}
+.oneliner {
+  background: rgba(99,102,241,.07); border: 1px solid rgba(99,102,241,.2);
+  border-radius: var(--r); padding: 28px 32px;
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+}
+.oneliner-label {
+  font-weight: 800; font-size: .96rem; color: var(--ink); flex-shrink: 0;
+}
+.oneliner .cmd { flex: 1; }
+
+/* ─── FEATURES ────────────────────────────────── */
+.features { border-bottom: 1px solid var(--border); }
+.feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
 .feat-card {
-  background: var(--bg-1);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  transition: border-color .25s, box-shadow .25s;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 30px;
+  display: flex; flex-direction: column;
+  transition: transform .25s, border-color .25s, box-shadow .25s;
+  cursor: default;
 }
 .feat-card:hover {
-  border-color: rgba(91,94,247,.28);
-  box-shadow: 0 20px 56px rgba(0,0,0,.4), 0 0 0 1px rgba(91,94,247,.08) inset;
+  transform: translateY(-4px);
+  border-color: rgba(99,102,241,.3);
+  box-shadow: 0 12px 40px rgba(0,0,0,.3), 0 0 40px rgba(99,102,241,.08);
 }
-
-/* visual zone */
-.fc-visual {
-  flex: 1; position: relative; overflow: hidden;
+.feat-icon {
+  width: 46px; height: 46px; border-radius: 13px;
+  background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.22);
   display: flex; align-items: center; justify-content: center;
-  padding: 32px 28px 0;
-  min-height: 0;
+  margin-bottom: 20px; font-size: 1.15rem;
+  transition: background .2s, border-color .2s;
 }
-.fc-visual::after {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 48px;
-  background: linear-gradient(to top, var(--bg-1), transparent);
-  pointer-events: none;
+.feat-card:hover .feat-icon { background: rgba(99,102,241,.2); border-color: rgba(99,102,241,.4); }
+.feat-card h3 { font-size: 1.05rem; margin-bottom: 8px; }
+.feat-card p  { font-size: .88rem; line-height: 1.68; flex: 1; }
+.feat-card code {
+  display: inline-block; margin-top: 16px;
+  font-size: .73rem; color: var(--primary-hi);
+  background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.2);
+  padding: 4px 11px; border-radius: 7px;
 }
-
-/* text zone */
-.fc-text {
-  padding: 20px 26px 24px;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.fc-title { font-size: 1rem; font-weight: 600; letter-spacing: -.015em; color: var(--ink); margin-bottom: 5px; }
-.fc-body  { font-size: .82rem; line-height: 1.6; }
-
-/* ── CARD 1: MCP Exposure — floating client nodes + glowing hub ── */
-.mcp-scene {
-  position: relative; width: 100%; height: 100%;
-}
-.mcp-hub {
-  position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 70px; height: 70px; border-radius: 50%;
-  background: radial-gradient(circle at 38% 32%, rgba(140,135,255,.85), rgba(91,94,247,.35) 55%, transparent 80%);
-  border: 1px solid rgba(130,128,255,.5);
-  box-shadow: 0 0 0 16px rgba(91,94,247,.07), 0 0 0 34px rgba(91,94,247,.04), 0 0 56px rgba(91,94,247,.45);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem; z-index: 2;
-  animation: hub-breathe 3.8s ease-in-out infinite;
-}
-@keyframes hub-breathe {
-  0%,100% { box-shadow: 0 0 0 16px rgba(91,94,247,.07), 0 0 0 34px rgba(91,94,247,.04), 0 0 56px rgba(91,94,247,.45); }
-  50%      { box-shadow: 0 0 0 22px rgba(91,94,247,.1),  0 0 0 44px rgba(91,94,247,.05), 0 0 72px rgba(91,94,247,.6); }
-}
-/* connection lines svg */
-.mcp-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.mcp-svg line { stroke: rgba(91,94,247,.2); stroke-width: 1; stroke-dasharray: 4 4; }
-.feat-card:hover .mcp-svg line { stroke: rgba(91,94,247,.4); }
-/* floating tool nodes */
-.mcp-node {
-  position: absolute;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  z-index: 3;
-  animation: node-float 4s ease-in-out infinite;
-}
-.mcp-node:nth-child(odd) { animation-direction: alternate-reverse; }
-@keyframes node-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
-.mn-icon {
-  width: 48px; height: 48px; border-radius: 14px;
-  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1rem; backdrop-filter: blur(6px);
-  transition: border-color .25s, background .25s;
-}
-.feat-card:hover .mn-icon { border-color: rgba(91,94,247,.3); background: rgba(91,94,247,.09); }
-.mn-label { font-family: var(--mono); font-size: .6rem; color: var(--muted); white-space: nowrap; }
-/* travelling pulse dot */
-.mcp-pulse {
-  position: absolute; width: 5px; height: 5px; border-radius: 50%;
-  background: var(--primary-2); box-shadow: 0 0 7px var(--primary-2);
-  pointer-events: none; z-index: 4;
-  animation: pulse-travel 2.6s ease-in-out infinite;
-  opacity: 0;
-}
-.mcp-pulse:nth-child(n+2) { animation-delay: .9s; }
-.mcp-pulse:nth-child(n+3) { animation-delay: 1.8s; }
-@keyframes pulse-travel { 0%,100%{opacity:0} 8%{opacity:1} 50%{opacity:.7} 92%{opacity:1} }
-
-/* ── CARD 2: Team Ownership — mini app window ── */
-.app-window {
-  width: 100%; height: 100%;
-  background: rgba(8,8,20,.88);
-  border: 1px solid var(--border); border-radius: 12px;
-  overflow: hidden; box-shadow: 0 20px 48px rgba(0,0,0,.5);
-  display: flex; flex-direction: column;
-}
-.aw-bar {
-  display: flex; align-items: center; gap: 6px; padding: 10px 14px;
-  border-bottom: 1px solid var(--border); background: rgba(255,255,255,.03); flex-shrink: 0;
-}
-.aw-dot { width: 9px; height: 9px; border-radius: 50%; }
-.aw-dot:nth-child(1){background:#ff5f57;} .aw-dot:nth-child(2){background:#febc2e;} .aw-dot:nth-child(3){background:#28c840;}
-.aw-bar .aw-title { margin-left: 8px; font-family: var(--mono); font-size: .68rem; color: var(--muted); }
-.aw-body { display: grid; grid-template-columns: 148px 1fr; flex: 1; min-height: 0; overflow: hidden; }
-.aw-sidebar {
-  border-right: 1px solid var(--border); padding: 14px 0; overflow: hidden;
-}
-.aw-sidebar-label { font-family: var(--mono); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 12px 8px; }
-.aw-nav {
-  display: flex; align-items: center; gap: 7px; padding: 7px 12px;
-  font-family: var(--mono); font-size: .68rem; color: var(--body); cursor: default;
-}
-.aw-nav svg { width: 11px; height: 11px; opacity: .45; flex-shrink: 0; }
-.aw-nav.active { background: rgba(91,94,247,.1); color: var(--ink); border-left: 2px solid var(--primary); }
-.aw-main { padding: 14px; overflow: hidden; }
-.aw-main-title { font-family: var(--mono); font-size: .72rem; color: var(--ink); margin-bottom: 10px; }
-.aw-api-row {
-  display: grid; grid-template-columns: 1fr auto auto;
-  gap: 8px; align-items: center;
-  padding: 8px 10px; border-radius: 7px; margin-bottom: 5px;
-  border: 1px solid transparent; cursor: default;
-  transition: background .15s, border-color .15s;
-}
-.aw-api-row:hover { background: rgba(255,255,255,.03); border-color: var(--border); }
-.aw-api-name { font-family: var(--mono); font-size: .7rem; color: var(--ink); font-weight: 500; }
-.aw-api-team { font-family: var(--mono); font-size: .62rem; color: var(--muted); }
-.aw-api-ver  { font-family: var(--mono); font-size: .65rem; color: var(--primary-2); }
-.aw-api-live {
-  display: flex; align-items: center; gap: 4px;
-  font-family: var(--mono); font-size: .61rem; color: var(--green); white-space: nowrap;
-}
-.aw-api-live::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--green); box-shadow: 0 0 5px var(--green); }
-
-/* ── CARD 3: Registry search ── */
-.reg-ui { display: flex; flex-direction: column; gap: 7px; width: 100%; }
-.reg-search {
-  display: flex; align-items: center; gap: 9px;
-  background: rgba(255,255,255,.05); border: 1px solid var(--border);
-  border-radius: 9px; padding: 10px 14px; margin-bottom: 2px;
-  font-family: var(--mono); font-size: .73rem; color: var(--muted);
-}
-.reg-search svg { flex-shrink: 0; opacity: .4; }
-.reg-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 9px 13px; border-radius: 9px; gap: 10px;
-  border: 1px solid var(--border); background: rgba(255,255,255,.03);
-  font-family: var(--mono); font-size: .71rem;
-  transition: background .15s, border-color .15s;
-}
-.reg-row:hover { background: rgba(91,94,247,.07); border-color: rgba(91,94,247,.2); }
-.rr-name { color: var(--ink); font-weight: 500; }
-.rr-sub  { color: var(--muted); font-size: .63rem; margin-top: 1px; }
-.rr-badges { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.rr-mcp  { font-size: .61rem; padding: 3px 8px; border-radius: 4px; color: var(--primary-2); background: rgba(91,94,247,.1); border: 1px solid rgba(91,94,247,.2); }
-.rr-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 5px var(--green); }
-
-/* ── CARD 4: CI code editor ── */
-.code-win {
-  width: 100%; background: rgba(6,6,18,.92);
-  border: 1px solid var(--border); border-radius: 12px;
-  overflow: hidden; box-shadow: 0 24px 48px rgba(0,0,0,.45);
-  font-family: var(--mono); font-size: .72rem;
-}
-.cw-bar {
-  display: flex; align-items: center; gap: 6px; padding: 10px 14px;
-  border-bottom: 1px solid var(--border); background: rgba(255,255,255,.03);
-}
-.cw-dot { width: 9px; height: 9px; border-radius: 50%; }
-.cw-dot:nth-child(1){background:#ff5f57;} .cw-dot:nth-child(2){background:#febc2e;} .cw-dot:nth-child(3){background:#28c840;}
-.cw-tabs { display: flex; gap: 1px; margin-left: 10px; }
-.cw-tab { font-size: .65rem; padding: 3px 10px; border-radius: 4px; color: var(--muted); }
-.cw-tab.active { background: rgba(91,94,247,.15); color: var(--primary-2); }
-.cw-body { padding: 12px 0; line-height: 1.85; }
-.cw-line { display: flex; padding: 1px 0; }
-.cw-line:hover { background: rgba(255,255,255,.025); }
-.cw-ln { width: 36px; text-align: right; padding-right: 16px; color: var(--muted); font-size: .64rem; flex-shrink: 0; user-select: none; }
-.cw-code { color: var(--body); padding-right: 14px; }
-.cw-kw { color: #a5b4fc; }
-.cw-fn { color: var(--amber); }
-.cw-st { color: var(--green); }
-.cw-cm { color: var(--muted); }
-.cw-hi { background: rgba(34,211,160,.06); }
-
-/* ── CARD 5: pipeline strip ── */
-.pipeline {
-  display: flex; align-items: center;
-  font-family: var(--mono); font-size: .7rem; gap: 0; width: 100%;
-}
-.pipe-step { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
-.pipe-icon {
-  width: 44px; height: 44px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border); background: rgba(255,255,255,.04);
-  font-size: 1rem;
-}
-.pipe-icon.done   { border-color: rgba(34,211,160,.35); background: rgba(34,211,160,.07); }
-.pipe-icon.active { border-color: rgba(91,94,247,.5); background: rgba(91,94,247,.12); animation: ppulse 1.6s ease infinite; }
-@keyframes ppulse { 0%,100%{box-shadow:0 0 0 0 rgba(91,94,247,.3)} 60%{box-shadow:0 0 0 8px rgba(91,94,247,0)} }
-.pipe-label { color: var(--muted); font-size: .63rem; white-space: nowrap; }
-.pipe-label.done   { color: var(--green); }
-.pipe-label.active { color: var(--primary-2); }
-.pipe-arrow {
-  flex: 1; height: 1px; min-width: 20px; max-width: 56px;
-  background: linear-gradient(90deg, rgba(255,255,255,.1), rgba(91,94,247,.3));
-  margin: 0 4px; margin-bottom: 22px; flex-shrink: 1;
-}
-
-/* ─── HOW IT WORKS ───────────────────────────────────────── */
-.how-section { padding: 96px 0; border-bottom: 1px solid var(--border); }
-.steps-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 48px; }
-.step-cell { background: var(--bg); padding: 36px 32px; }
-.step-cell:hover { background: var(--bg-1); }
-.step-n { font-family: var(--mono); font-size: .68rem; color: var(--muted); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-.step-n::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-.step-h { font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: 10px; letter-spacing: -.015em; }
-.step-p { font-size: .85rem; line-height: 1.65; }
-.step-code { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-family: var(--mono); font-size: .72rem; line-height: 1.75; color: var(--body); margin-top: 16px; }
-.step-code .c-g { color: var(--green); }
-.step-code .c-p { color: var(--primary-2); }
-.step-code .c-d { color: var(--muted); }
-.step-code blockquote { font-style: italic; color: var(--ink); border-left: 2px solid var(--primary); padding-left: 10px; margin-top: 4px; font-family: var(--sans); }
-/* one-liner */
-.oneliner { margin-top: 40px; padding: 24px 28px; background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius); display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-.oneliner .ol-label { font-family: var(--mono); font-size: .72rem; color: var(--muted); flex-shrink: 0; }
-
-/* ─── STACK ──────────────────────────────────────────────── */
-.stack-section {
-  padding: 80px 0;
-  border-bottom: 1px solid var(--border);
-}
-.stack-inner {
-  display: grid;
-  grid-template-columns: 1fr 1px 1fr;
-  gap: 0;
-  margin-top: 52px;
-  background: var(--bg-1);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  overflow: hidden;
-}
-.stack-divider { background: var(--border); }
-.stack-col {
-  padding: 36px 36px 32px;
-}
-.stack-col-label {
-  font-family: var(--mono);
-  font-size: .65rem; letter-spacing: .12em; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 20px;
-  display: flex; align-items: center; gap: 8px;
-}
-.stack-col-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-.tool-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-.tool-card {
-  display: flex; flex-direction: column; align-items: center; gap: 9px;
-  padding: 14px 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+.feat-mini-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 14px; }
+.feat-mini {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px 22px;
+  transition: border-color .2s, transform .2s;
   cursor: default;
+}
+.feat-mini:hover { border-color: rgba(99,102,241,.3); transform: translateY(-2px); }
+.feat-mini h4 { font-size: .92rem; font-weight: 700; margin-bottom: 6px; color: var(--ink); }
+.feat-mini p  { font-size: .83rem; }
+
+/* ─── PRO STRIP ───────────────────────────────── */
+.pro-strip {
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 96px 0;
+}
+.pro-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-top: 40px; }
+.pro-card {
+  background: rgba(255,255,255,.03); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 22px;
+  transition: transform .2s, border-color .2s;
+  cursor: default;
+}
+.pro-card:hover { transform: translateY(-3px); border-color: rgba(167,139,250,.3); }
+.pro-card h4 { font-size: .95rem; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+.pro-card p  { font-size: .84rem; line-height: 1.6; }
+.pro-bill { margin-top: 28px; font-size: .86rem; text-align: center; }
+.pro-bill strong { color: var(--ink); }
+
+/* ─── STACK ───────────────────────────────────── */
+.stack { border-bottom: 1px solid var(--border); }
+.chips-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.chip {
+  font-size: .86rem; font-weight: 600; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 8px 18px; border-radius: 99px;
   transition: border-color .2s, background .2s, transform .2s;
+  cursor: default;
+}
+.chip:hover { border-color: rgba(99,102,241,.45); background: rgba(99,102,241,.1); transform: translateY(-1px); }
+.chip.muted { color: var(--muted); border-style: dashed; }
+.stack-note { font-size: .9rem; text-align: center; margin-top: 24px; }
+.stack-sub  { font-size: .82rem; color: var(--muted); text-align: center; margin-top: 6px; }
+
+/* ─── STATS ───────────────────────────────────── */
+.stats-row {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  overflow: hidden; margin-top: 52px;
+}
+.stat-cell {
+  background: var(--bg-2); padding: 32px 36px;
   text-align: center;
 }
-.tool-card:hover {
-  border-color: rgba(91,94,247,.35);
-  background: rgba(91,94,247,.07);
-  transform: translateY(-2px);
+.stat-num {
+  font-size: 2.4rem; font-weight: 800; letter-spacing: -.04em;
+  color: var(--ink); line-height: 1; display: block;
 }
-.tool-card.roadmap {
-  opacity: .45;
-  border-style: dashed;
-  grid-column: span 3;
-  flex-direction: row;
-  justify-content: center;
-  padding: 10px 14px;
-  gap: 8px;
-}
-.tool-card.roadmap:hover { opacity: .65; transform: none; }
-.tc-icon {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.tool-card:hover .tc-icon {
-  border-color: rgba(91,94,247,.3);
-  background: rgba(91,94,247,.1);
-}
-.tc-name {
-  font-family: var(--mono); font-size: .68rem;
-  color: var(--body); line-height: 1.3;
-}
-.tool-card:hover .tc-name { color: var(--ink); }
-.tc-road {
-  font-family: var(--mono); font-size: .63rem; color: var(--muted);
-}
-/* trust bar below grid */
-.stack-trust {
-  margin-top: 28px;
-  padding: 20px 24px;
-  background: rgba(91,94,247,.06);
-  border: 1px solid rgba(91,94,247,.15);
-  border-radius: 12px;
-  display: flex; align-items: flex-start; gap: 14px;
-}
-.st-icon {
-  width: 34px; height: 34px; border-radius: 9px;
-  background: rgba(91,94,247,.12); border: 1px solid rgba(91,94,247,.2);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; color: var(--primary-2);
-}
-.st-text {}
-.st-headline {
-  font-family: var(--mono); font-size: .82rem; font-weight: 600;
-  color: var(--ink); letter-spacing: .01em;
-}
-.st-sub {
-  font-size: .78rem; color: var(--muted); margin-top: 3px; line-height: 1.5;
-}
+.stat-label { font-size: .82rem; color: var(--muted); margin-top: 6px; display: block; }
 
-/* ─── PRICING ────────────────────────────────────────────── */
-.pricing-section { padding: 96px 0; border-bottom: 1px solid var(--border); }
-.price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 48px; }
-.price-card {
-  background: var(--bg-1); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 32px;
+/* ─── PRICING ─────────────────────────────────── */
+.pricing { border-bottom: 1px solid var(--border); }
+.pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.plan {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 36px;
   display: flex; flex-direction: column;
-  transition: border-color .2s;
+  transition: transform .25s, box-shadow .25s;
+  cursor: default;
 }
-.price-card:hover { border-color: var(--border-hi); }
-.price-card.pro {
-  border-color: rgba(91,94,247,.4);
-  background: linear-gradient(135deg, rgba(91,94,247,.08), rgba(124,126,255,.04));
-  box-shadow: 0 0 60px rgba(91,94,247,.1);
+.plan:hover { transform: translateY(-4px); }
+.plan.pro-plan {
+  border-color: rgba(99,102,241,.4);
+  background: linear-gradient(140deg, rgba(99,102,241,.1) 0%, rgba(124,58,237,.06) 100%);
+  box-shadow: 0 20px 60px -20px rgba(99,102,241,.25), 0 0 100px rgba(99,102,241,.08);
+  position: relative;
 }
-.price-tag {
-  display: inline-flex; margin-bottom: 20px;
-  font-family: var(--mono); font-size: .65rem; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--primary-2); background: rgba(91,94,247,.1); border: 1px solid rgba(91,94,247,.2);
-  padding: 4px 10px; border-radius: 4px; align-self: flex-start;
+.plan-ribbon {
+  position: absolute; top: -14px; left: 36px;
+  background: linear-gradient(135deg, var(--primary), var(--violet));
+  color: #fff; font-size: .72rem; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase; padding: 5px 14px; border-radius: 99px;
+  box-shadow: 0 4px 16px rgba(99,102,241,.45);
 }
-.price-name { font-size: 1.1rem; font-weight: 600; color: var(--ink); }
-.price-desc { font-size: .83rem; margin-top: 6px; }
-.price-amt { font-family: var(--mono); font-size: 2.4rem; font-weight: 600; color: var(--ink); margin: 20px 0 4px; letter-spacing: -.03em; }
-.price-amt small { font-size: .85rem; font-weight: 400; color: var(--body); }
-.price-note { font-size: .8rem; }
-.price-list { list-style: none; margin: 24px 0; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-.price-list li { font-size: .85rem; padding-left: 20px; position: relative; }
-.price-list li::before { content: '—'; position: absolute; left: 0; color: var(--primary-2); font-family: var(--mono); font-size: .75rem; }
-.price-cta { display: flex; gap: 10px; flex-wrap: wrap; }
-.price-cta .btn { font-size: .85rem; }
-.price-disq { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); font-size: .78rem; color: var(--muted); font-style: italic; font-family: var(--mono); }
-.ent-note { text-align: center; font-size: .83rem; margin-top: 24px; }
-.ent-note a { color: var(--primary-2); }
-.trust-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 24px; margin-top: 32px; font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+.plan h3 { font-size: 1.3rem; }
+.plan .for { font-size: .88rem; margin-top: 7px; }
+.plan .price {
+  font-size: 2.4rem; font-weight: 800; color: var(--ink);
+  letter-spacing: -.04em; margin: 22px 0 4px;
+}
+.plan .price small { font-size: .9rem; font-weight: 500; color: var(--muted); }
+.plan .price-note { font-size: .82rem; }
+.plan ul { list-style: none; margin: 26px 0; display: flex; flex-direction: column; gap: 11px; flex: 1; }
+.plan li { font-size: .88rem; padding-left: 24px; position: relative; }
+.plan li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+.plan .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.plan .disq {
+  margin-top: 18px; font-size: .82rem; color: var(--muted);
+  font-style: italic; border-top: 1px dashed var(--border); padding-top: 16px;
+}
+.pricing .ent { text-align: center; font-size: .88rem; margin-top: 22px; }
+.trust-row {
+  display: flex; flex-wrap: wrap; gap: 8px 26px; justify-content: center;
+  margin-top: 40px; font-family: var(--mono); font-size: .74rem; color: var(--muted);
+}
 
-/* ─── FAQ ────────────────────────────────────────────────── */
-.faq-section { padding: 96px 0; border-bottom: 1px solid var(--border); }
-.faq-list { margin-top: 48px; }
-details {
+/* ─── FAQ ─────────────────────────────────────── */
+.faq {
+  background: rgba(255,255,255,.012);
   border-bottom: 1px solid var(--border);
-  transition: background .15s;
 }
-details:first-child { border-top: 1px solid var(--border); }
+.faq-list { max-width: 720px; margin: 0 auto; }
+details {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; margin-bottom: 12px; overflow: hidden;
+  backdrop-filter: blur(10px);
+  transition: border-color .2s, box-shadow .2s;
+}
+details:hover { border-color: rgba(99,102,241,.3); }
+details[open] { border-color: rgba(99,102,241,.38); box-shadow: 0 4px 24px rgba(0,0,0,.2); }
 details summary {
-  list-style: none; padding: 20px 0; cursor: pointer;
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: .95rem; font-weight: 500; color: var(--ink);
-  user-select: none;
+  cursor: pointer; padding: 20px 24px; list-style: none;
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  font-size: .96rem; font-weight: 700; color: var(--ink);
 }
 details summary::-webkit-details-marker { display: none; }
 details summary .plus {
-  font-family: var(--mono); font-size: 1.1rem; color: var(--muted);
-  transition: transform .2s, color .2s;
-  flex-shrink: 0;
+  font-family: var(--mono); font-size: 1.15rem; color: var(--muted);
+  transition: transform .22s, color .22s; flex-shrink: 0;
 }
-details[open] summary .plus { transform: rotate(45deg); color: var(--primary-2); }
-details .faq-a { padding: 0 0 20px; font-size: .88rem; line-height: 1.7; max-width: 680px; }
+details[open] summary .plus { transform: rotate(45deg); color: var(--primary-hi); }
+details .faq-a { padding: 0 24px 22px; font-size: .9rem; line-height: 1.7; }
 
-/* ─── FINAL CTA ──────────────────────────────────────────── */
+/* ─── PARTNERS ────────────────────────────────── */
+.partners { border-bottom: 1px solid var(--border); }
+.partner-box {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 52px;
+  display: grid; grid-template-columns: 1.3fr .7fr; gap: 60px; align-items: center;
+  transition: border-color .25s;
+}
+.partner-box:hover { border-color: rgba(99,102,241,.28); }
+.partner-box .eyebrow { justify-content: flex-start; }
+.partner-box h2 { font-size: clamp(1.4rem,2.6vw,1.9rem); margin-bottom: 16px; }
+.partner-box .offer { font-size: .94rem; line-height: 1.7; }
+.partner-box .offer strong { color: var(--ink); }
+.founder-quote {
+  border-left: 3px solid rgba(99,102,241,.35); padding-left: 24px;
+}
+.founder-quote p { font-style: italic; font-size: .94rem; color: var(--ink); line-height: 1.7; }
+.founder-quote .who { margin-top: 12px; font-size: .82rem; font-style: normal; color: var(--muted); }
+
+/* ─── FINAL CTA ───────────────────────────────── */
 .final-cta {
-  padding: 110px 0;
-  text-align: center;
-  position: relative; overflow: hidden;
+  text-align: center; padding: 116px 0;
+  background: radial-gradient(900px 500px at 50% 110%, rgba(124,58,237,.3), transparent 65%);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden; position: relative;
 }
-.final-cta::before {
-  content: '';
-  position: absolute; bottom: -100px; left: 50%; transform: translateX(-50%);
-  width: 700px; height: 400px;
-  background: radial-gradient(ellipse, rgba(91,94,247,.2) 0%, transparent 70%);
-  pointer-events: none;
-}
-.final-cta h2 {
-  font-size: clamp(2rem, 4.5vw, 3.4rem);
-  font-weight: 700; letter-spacing: -.03em; color: var(--ink); line-height: 1.1;
-}
-.final-cta p { font-size: .95rem; margin: 18px auto 36px; max-width: 420px; }
-.final-cta .install-cmd { max-width: 500px; margin-top: 24px; }
-.final-cta .meta { font-family: var(--mono); font-size: .72rem; color: var(--muted); margin-top: 20px; }
-.final-cta .meta a { color: var(--primary-2); }
+.final-cta h2 { color: #f8fafc; margin-bottom: 20px; }
+.final-cta .sub { font-size: .96rem; color: #94a3b8; max-width: 440px; margin: 0 auto 38px; }
+.final-cta .cmd { max-width: 600px; margin: 24px auto 0; text-align: left; }
+.final-cta .micro { margin-top: 20px; font-size: .8rem; color: #64748b; }
 
-/* ─── FOOTER ─────────────────────────────────────────────── */
+/* ─── FOOTER ──────────────────────────────────── */
 footer {
-  border-top: 1px solid var(--border);
-  padding: 56px 0 40px;
-  background: var(--bg-1);
+  background: var(--bg-2); border-top: 1px solid rgba(255,255,255,.05);
+  padding: 64px 0 40px;
 }
-.foot-inner {
-  display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px;
+.foot-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; }
+.foot-logo { font-size: 1.15rem; font-weight: 800; letter-spacing: -.03em; color: var(--ink); }
+.foot-logo span { color: var(--primary-hi); }
+.foot-brand p { margin-top: 12px; font-size: .84rem; max-width: 260px; line-height: 1.65; }
+.foot-ship { margin-top: 24px; }
+.foot-ship h6 {
+  font-family: var(--mono); font-size: .65rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--primary-hi); margin-bottom: 10px;
 }
-.foot-brand .logo {
-  font-family: var(--mono); font-size: .88rem; font-weight: 600; color: var(--ink);
-}
-.foot-brand .logo span { color: var(--primary-2); }
-.foot-brand p { margin-top: 10px; font-size: .82rem; max-width: 240px; line-height: 1.65; }
-.foot-ship { margin-top: 20px; }
-.foot-ship h6 { font-family: var(--mono); font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; color: var(--primary-2); margin-bottom: 10px; }
 .foot-ship ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
-.foot-ship li { font-size: .78rem; padding-left: 12px; position: relative; }
-.foot-ship li::before { content: '→'; position: absolute; left: 0; color: var(--muted); font-family: var(--mono); font-size: .7rem; }
-.foot-col h5 { font-family: var(--mono); font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.foot-ship li { font-size: .8rem; padding-left: 14px; position: relative; }
+.foot-ship li::before { content: '→'; position: absolute; left: 0; color: var(--muted); font-family: var(--mono); }
+.foot-col h5 {
+  font-family: var(--mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 14px;
+}
 .foot-col ul { list-style: none; display: flex; flex-direction: column; gap: 9px; }
-.foot-col a { font-size: .82rem; color: var(--body); transition: color .15s; }
-.foot-col a:hover { color: var(--ink); }
-.foot-bottom { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-family: var(--mono); font-size: .7rem; color: var(--muted); flex-wrap: wrap; gap: 10px; }
+.foot-col a { font-size: .84rem; color: var(--body); transition: color .15s; }
+.foot-col a:hover { color: var(--ink); text-decoration: none; }
+.foot-bottom {
+  margin-top: 52px; padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,.05);
+  display: flex; justify-content: space-between; flex-wrap: wrap;
+  gap: 10px; font-family: var(--mono); font-size: .72rem; color: var(--muted);
+}
 .foot-bottom a { color: var(--muted); }
-.foot-bottom a:hover { color: var(--body); }
+.foot-bottom a:hover { color: var(--body); text-decoration: none; }
 
-/* ─── REVEAL ─────────────────────────────────────────────── */
-.r { opacity: 0; transform: translateY(16px); transition: opacity .55s cubic-bezier(.16,1,.3,1), transform .55s cubic-bezier(.16,1,.3,1); }
-.r.in { opacity: 1; transform: none; }
-.r2 { transition-delay: .08s; }
-.r3 { transition-delay: .16s; }
+/* ─── SCROLL REVEAL BASE ──────────────────────── */
+.sr { opacity: 0; }
 
-/* ─── RESPONSIVE ─────────────────────────────────────────── */
-
-/* ── Tablet (≤960px) ── */
-@media (max-width: 960px) {
-  /* nav */
+/* ─── RESPONSIVE ──────────────────────────────── */
+@media (max-width: 1024px) {
+  .hero-layout { grid-template-columns: 1fr; gap: 52px; }
+  .hero h1 { font-size: clamp(2.2rem,5vw,3.2rem); }
+  .pro-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .compare-grid, .pricing-grid, .foot-grid { grid-template-columns: 1fr; }
+  .steps-row, .feat-grid, .feat-mini-grid { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: 1fr; }
+  .partner-box { grid-template-columns: 1fr; padding: 32px; gap: 32px; }
   .nav-links { display: none; }
-  .nav-logo { padding-right: 20px; margin-right: 0; border-right: none; }
-
-  /* hero */
-  .hero { padding: 64px 0 72px; }
-  .hero-screen { margin-top: 40px; }
-
-  /* bento */
-  .bento-grid {
-    grid-template-columns: 1fr 1fr !important;
-    grid-template-rows: auto !important;
-  }
-  .bento-grid .feat-card { grid-column: auto !important; grid-row: auto !important; min-height: 340px; }
-  .bento-grid .feat-card:nth-child(5) { flex-direction: column; height: auto; }
-  .bento-grid .feat-card:nth-child(5) .fc-text { flex: none; border-top: 1px solid var(--border); }
-  .bento-grid .feat-card:nth-child(5) .fc-visual { border-right: none; border-bottom: 1px solid var(--border); min-height: 160px; }
-
-  /* stack */
-  .stack-inner { grid-template-columns: 1fr; }
-  .stack-divider { width: 100%; height: 1px; }
-
-  /* compare */
-  .compare-grid { grid-template-columns: 1fr; }
-
-  /* steps */
-  .steps-grid { grid-template-columns: 1fr; }
-
-  /* screen mockup */
-  .screen-body { grid-template-columns: 1fr; }
-  .screen-sidebar { display: none; }
-
-  /* pricing */
-  .price-grid { grid-template-columns: 1fr; }
-
-  /* footer */
-  .foot-inner { grid-template-columns: 1fr 1fr; }
+  section { padding: 72px 0; }
 }
-
-/* ── Mobile (≤580px) ── */
-@media (max-width: 580px) {
-
-  /* global spacing */
-  .wrap, .wrap-sm { padding: 0 18px; }
-  section { padding: 64px 0; }
-
-  /* nav — tighter, signin hidden */
-  .nav-inner { height: 52px; }
-  .nav-logo { font-size: .82rem; padding-right: 0; border-right: none; margin-right: 0; }
-  .nav-signin { display: none; }
-  .nav-right { gap: 8px; }
-  .btn { padding: 8px 14px; font-size: .78rem; }
-
-  /* hero */
-  .hero { padding: 52px 0 60px; }
-  .hero h1 { font-size: clamp(1.9rem, 8vw, 2.4rem); letter-spacing: -.025em; }
-  .hero-sub { font-size: .95rem; margin-top: 16px; }
-  .hero-badge { font-size: .68rem; }
-  .hero-actions { flex-direction: column; align-items: stretch; gap: 10px; }
-  .hero-actions .btn { justify-content: center; padding: 13px 18px; font-size: .9rem; }
-  .install-cmd { font-size: .72rem; padding: 10px 12px; gap: 8px; }
-  .hero-screen { margin-top: 32px; border-radius: 10px; }
-  .screen-bar .url { font-size: .65rem; }
-  .api-table th, .api-table td { padding: 8px 6px; font-size: .68rem; }
-
-  /* logo strip */
-  .strip { padding: 28px 0; }
-  .strip-logos { gap: 8px; }
-  .logo-pill { font-size: .7rem; padding: 5px 11px; }
-
-  /* section labels */
-  .section-label { font-size: .6rem; letter-spacing: .1em; margin-bottom: 24px; }
-  .section-label::before, .section-label::after { min-width: 20px; }
-
-  /* compare */
-  .compare-section { padding: 64px 0; }
-  .compare-grid { gap: 12px; }
-  .cc-head { padding: 16px 18px 12px; }
-  .cc-code { padding: 14px 16px; font-size: .68rem; }
-  .cc-foot { padding: 12px 18px; font-size: .78rem; }
-  .compare-cta { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .compare-cta .btn { width: 100%; justify-content: center; }
-
-  /* features bento */
-  .bento-grid { grid-template-columns: 1fr !important; gap: 8px; }
-  .bento-grid .feat-card { min-height: 320px; border-radius: 14px; }
-  .fc-text { padding: 18px 20px 20px; }
-  .fc-title { font-size: .95rem; }
-  .fc-body { font-size: .8rem; }
-  /* shrink orbit scene on mobile */
-  .mcp-scene { transform: scale(.78); transform-origin: center center; }
-  .aw-body { min-height: 180px; }
-  .aw-main-title { font-size: .72rem; }
-  .aw-api-row { padding: 7px 10px; }
-  .aw-api-name { font-size: .72rem; }
-  .aw-api-team { font-size: .58rem; }
-
-  /* how it works */
-  .how-section { padding: 64px 0; }
-  .steps-grid { border-radius: 10px; }
-  .step-cell { padding: 28px 22px; }
-  .step-h { font-size: .95rem; }
-  .step-p { font-size: .82rem; }
-  .step-code { font-size: .68rem; }
-  .oneliner { flex-direction: column; gap: 10px; padding: 18px 16px; }
-  .oneliner .ol-label { font-size: .68rem; }
-  .install-cmd .cmd-txt { font-size: .72rem; }
-
-  /* stack */
-  .stack-section { padding: 56px 0; }
-  .stack-inner { border-radius: 14px; }
-  .stack-col { padding: 24px 20px; }
-  .tool-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .tool-card { padding: 12px 6px; gap: 6px; border-radius: 10px; }
-  .tc-icon { width: 30px; height: 30px; border-radius: 8px; }
-  .tc-icon svg { width: 14px; height: 14px; }
-  .tc-name { font-size: .6rem; }
-  .stack-trust { padding: 14px 14px; gap: 10px; }
-  .st-icon { width: 28px; height: 28px; flex-shrink: 0; }
-  .st-headline { font-size: .75rem; }
-  .st-sub { font-size: .7rem; }
-
-  /* pricing */
-  .pricing-section { padding: 64px 0; }
-  .price-card { padding: 24px 22px; border-radius: 14px; }
-  .price-amt { font-size: 1.9rem; }
-  .price-list li { font-size: .82rem; }
-  .price-cta { flex-direction: column; }
-  .price-cta .btn { width: 100%; justify-content: center; }
-  .trust-row { gap: 6px 16px; font-size: .65rem; }
-
-  /* faq */
-  .faq-section { padding: 64px 0; }
-  details summary { font-size: .9rem; padding: 16px 0; }
-  details .faq-a { font-size: .84rem; }
-
-  /* partners */
-  .partners { padding: 56px 0; }
-  .partners-box { padding: 28px 22px; grid-template-columns: 1fr; gap: 28px; border-radius: 14px; }
-  .founder { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 20px; }
-
-  /* final cta */
-  .final-cta { padding: 72px 0; }
-  .final-cta h2 { font-size: clamp(1.6rem, 6vw, 2.2rem); }
-  .final-cta p { font-size: .88rem; }
-  .final-cta .install-cmd { font-size: .7rem; }
-  .final-cta .meta { font-size: .7rem; }
-
-  /* footer */
-  .foot-inner { grid-template-columns: 1fr; gap: 32px; }
-  .foot-brand p { max-width: 100%; }
-  .foot-bottom { flex-direction: column; gap: 6px; font-size: .65rem; }
+@media (max-width: 540px) {
+  .pro-grid { grid-template-columns: 1fr; }
+  h1 { font-size: 2rem; }
+  .hero { padding: 60px 0 72px; }
 }
-
-/* ── Small mobile (≤380px) ── */
-@media (max-width: 380px) {
-  .hero h1 { font-size: 1.75rem; }
-  .tool-grid { grid-template-columns: repeat(2, 1fr); }
-  .tool-card.roadmap { grid-column: span 2; }
-  .pipeline { gap: 0; }
-  .pipe-connector { flex: 0 0 12px; }
-  .pipe-icon { width: 32px; height: 32px; border-radius: 8px; }
-  .pipe-icon svg { width: 14px; height: 14px; }
-  .pipe-label { font-size: .55rem; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition: none !important; animation: none !important; }
-  .r { opacity: 1; transform: none; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .sr { opacity: 1 !important; transform: none !important; }
 }
 </style>
 </head>
 <body>
 
-<!-- ───── NAV ───────────────────────────────────────────── -->
+<!-- ambient canvas -->
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+<!-- ══════════════ NAV ══════════════ -->
 <nav>
   <div class="wrap nav-inner">
-    <a class="nav-logo" href="#">spec<span>0</span></a>
+    <a class="logo" href="#">spec<span>0</span></a>
     <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#how-it-works">How it works</a>
+      <a href="#how-it-works">Product</a>
       <a href="#pricing">Pricing</a>
+      <a href="https://docs.spec0.io">Docs</a>
       <a href="https://github.com/spec-0">Open source</a>
     </div>
     <div class="nav-right">
@@ -945,109 +671,83 @@ footer {
   </div>
 </nav>
 
-<!-- ───── HERO ───────────────────────────────────────────── -->
+<!-- ══════════════ HERO ══════════════ -->
 <header class="hero">
-  <div class="hero-glow"></div>
-  <div class="wrap">
-    <div class="hero-badge r"><span class="dot"></span>v0.4 · CLI & mock server open source</div>
-    <h1 class="r r2">Your internal APIs,<br><em>always queryable.</em></h1>
-    <p class="hero-sub r r3">Push OpenAPI specs once from CI. Cursor, Claude Code, and any MCP client retrieve exactly the operations they need — always current, never pasted.</p>
-    <div class="hero-actions r">
-      <a class="btn btn-primary" href="https://app.spec0.io">Start free →</a>
-      <a class="btn btn-ghost" href="#how-it-works">How it works</a>
-    </div>
-    <div class="install-cmd r" id="hero-cmd" onclick="copyInstall(this)">
-      <span class="ps">$</span>
-      <span class="cmd-txt" id="cmd-txt-1">npm i -g @spec0/cli && spec0 mcp install --client cursor</span>
-      <button class="copy-btn" id="copy-btn-1">copy</button>
+  <div class="wrap hero-layout">
+    <div>
+      <div class="hero-badge" id="hero-badge">
+        <span class="live-dot"></span>v0.4 · CLI &amp; mock server open source
+      </div>
+      <h1 id="hero-title">Push your specs once.<br><span class="g-text">Every agent queries<br>them live.</span></h1>
+      <p class="sub" id="hero-sub">spec0 is the MCP layer for your internal APIs. Your OpenAPI specs go in from CI — Cursor, Claude Code, and any MCP client retrieve just the operations they need. Always current, never pasted.</p>
+
+      <div class="hero-actions" id="hero-actions">
+        <div class="row">
+          <a class="btn btn-primary" href="https://app.spec0.io">Start free</a>
+          <a class="btn btn-ghost" href="#how-it-works">How it works</a>
+        </div>
+        <div class="cmd" onclick="copyCmd(this,'hcmd')">
+          <span class="ps">$</span>
+          <span class="txt" id="hcmd">npm i -g @spec0/cli &amp;&amp; spec0 mcp install --client cursor</span>
+          <button class="copy-btn">Copy</button>
+        </div>
+        <span class="hint">Two commands. Your agent knows your APIs.</span>
+      </div>
+
+      <div class="hero-icp" id="hero-icp">
+        <span>⚡</span>
+        <span>Built for <strong>engineering teams of 50–500</strong> where developers code with AI agents — and OpenAPI specs sit in folders instead of powering them.</span>
+      </div>
     </div>
 
-    <!-- product screenshot mock -->
-    <div class="hero-screen r">
-      <div class="screen-bar">
-        <i></i><i></i><i></i>
-        <span class="url">app.spec0.io / registry</span>
-      </div>
-      <div class="screen-body">
-        <div class="screen-sidebar">
-          <div class="sidebar-section">MAIN</div>
-          <div class="sidebar-item">󰋠  Dashboard</div>
-          <div class="sidebar-item active"><span class="si">&lt;&gt;</span> APIs</div>
-          <div class="sidebar-item"><span class="si">󰈙</span> Publish Guide</div>
-          <div class="sidebar-item"><span class="si">󰇰</span> Mock Servers</div>
-          <div class="sidebar-item"><span class="si">󱈆</span> Services</div>
-          <div style="height:12px"></div>
-          <div class="sidebar-section">SETTINGS</div>
-          <div class="sidebar-item"><span class="si">󰒋</span> Teams</div>
-          <div class="sidebar-item"><span class="si">󰙌</span> Environments</div>
+    <div id="hero-term">
+      <div class="terminal">
+        <div class="term-bar">
+          <div class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <span class="label">~/orders-api</span>
+          <span class="live">live</span>
         </div>
-        <div class="screen-main">
-          <div class="sm-title">API Registry &nbsp;<span style="color:var(--muted);font-size:.7rem">— Browse and manage your organisation's APIs</span></div>
-          <table class="api-table">
-            <thead>
-              <tr>
-                <th>API Name</th><th>Version</th><th>Owning Team</th><th>Status</th><th>MCP</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="name">orders-api</td><td class="ver">v2.1</td><td>Payments</td>
-                <td><span class="status status-live">Live</span></td>
-                <td><span class="mcp-badge">⚡ MCP</span></td>
-              </tr>
-              <tr>
-                <td class="name">payments-api</td><td class="ver">v1.4</td><td>Payments</td>
-                <td><span class="status status-live">Live</span></td>
-                <td><span class="mcp-badge">⚡ MCP</span></td>
-              </tr>
-              <tr>
-                <td class="name">auth-service</td><td class="ver">v3.0</td><td>Platform</td>
-                <td><span class="status status-live">Live</span></td>
-                <td><span class="mcp-badge">⚡ MCP</span></td>
-              </tr>
-              <tr>
-                <td class="name">notifications</td><td class="ver">v1.0</td><td>Growth</td>
-                <td><span class="status status-none">Not set</span></td>
-                <td>—</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="term-body" id="term-body"></div>
+        <div class="term-cap">
+          One MCP query later, the agent wrote a correct refund handler — <code>amount_minor_units</code>, <code>Idempotency-Key</code>, the <code>reason</code> enum — without ever seeing the full spec.
         </div>
       </div>
     </div>
   </div>
 </header>
 
-<!-- ───── LOGO STRIP ────────────────────────────────────── -->
-<div class="strip r">
+<!-- ══════════════ CLIENTS ══════════════ -->
+<div class="clients">
   <div class="wrap">
-    <div class="strip-label">Queryable by any MCP client</div>
-    <div class="strip-logos">
-      <span class="logo-pill">Cursor</span>
-      <span class="logo-pill">Claude Code</span>
-      <span class="logo-pill">Claude Desktop</span>
-      <span class="logo-pill">Continue.dev</span>
-      <span class="logo-pill">Cline</span>
-      <span class="logo-pill dim">+ any MCP client</span>
+    <div class="clients-label">Queryable by any MCP client</div>
+    <div class="clients-row" id="clients-row">
+      <span class="client-pill">Cursor</span>
+      <span class="client-pill">Claude Code</span>
+      <span class="client-pill">Claude Desktop</span>
+      <span class="client-pill">Continue.dev</span>
+      <span class="client-pill">Cline</span>
+      <span class="client-pill">+ any MCP client</span>
     </div>
   </div>
 </div>
 
-<!-- ───── COMPARISON ────────────────────────────────────── -->
-<section class="compare-section" id="why">
+<!-- ══════════════ COMPARISON ══════════════ -->
+<section class="compare" id="why">
   <div class="wrap">
-    <div class="section-label center r">THE PROBLEM</div>
-    <h2 style="font-size:clamp(1.7rem,3.2vw,2.4rem);font-weight:700;color:var(--ink);letter-spacing:-.025em;text-align:center;max-width:700px;margin:0 auto" class="r">Stop pasting OpenAPI specs into Cursor. Stop guessing if they're current.</h2>
-    <p style="text-align:center;max-width:540px;margin:18px auto 0;font-size:.95rem" class="r">Two ways to give an agent your Orders API. One feeds it a wall of stale YAML and hopes. The other answers the question it actually asked.</p>
+    <div class="sec-hdr sr">
+      <span class="eyebrow">The problem</span>
+      <h2>Stop pasting OpenAPI specs.<br>Stop guessing if they're current.</h2>
+      <p>Two ways to give an agent your Orders API. One feeds it a wall of stale YAML and hopes. The other answers the question it actually asked.</p>
+    </div>
 
     <div class="compare-grid">
-      <div class="compare-card r">
+      <div class="compare-card sr">
         <div class="cc-head">
           <div class="cc-tag">Strategy A</div>
-          <div class="cc-title">Pasting the spec</div>
-          <div class="token-bar">
+          <h3>Pasting the spec</h3>
+          <div class="token-row">
             <span class="token-num bad">~5,200 tokens</span>
-            <div class="t-bar"><div class="t-fill bad" data-w="100%"></div></div>
+            <div class="token-bar"><div class="token-fill bad" data-w="100%"></div></div>
           </div>
         </div>
         <div class="cc-code">
@@ -1063,16 +763,16 @@ footer {
             <span class="ky">enum:</span> [<span class="vl">"customer"</span>, <span class="vl">"fraud"</span>…]
 <span class="cm">  …and 4,800 more lines of unrelated endpoints</span>
         </div>
-        <div class="cc-foot" style="color:var(--muted)">Pasted at 9am. By lunch the spec changed. The agent doesn't know.</div>
+        <div class="cc-foot">Pasted at 9am. By lunch the spec changed. The agent doesn't know.</div>
       </div>
 
-      <div class="compare-card win r r2">
+      <div class="compare-card win sr">
         <div class="cc-head">
           <div class="cc-tag">Strategy B · spec0</div>
-          <div class="cc-title">Querying spec0 over MCP</div>
-          <div class="token-bar">
+          <h3>Querying spec0 over MCP</h3>
+          <div class="token-row">
             <span class="token-num good">~400 tokens</span>
-            <div class="t-bar"><div class="t-fill good" data-w="8%"></div></div>
+            <div class="token-bar"><div class="token-fill good" data-w="8%"></div></div>
           </div>
         </div>
         <div class="cc-code">
@@ -1091,550 +791,225 @@ footer {
       </div>
     </div>
 
-    <div class="compare-cta r">
+    <div class="compare-cta sr">
       <a class="btn btn-primary" href="https://app.spec0.io">Start free →</a>
       <span class="note">Free for public specs · no card · agent-queryable in minutes</span>
     </div>
   </div>
 </section>
 
-<!-- ───── FEATURES ───────────────────────────────────────── -->
-<section class="features-section" id="features">
+<!-- ══════════════ HOW IT WORKS ══════════════ -->
+<section class="how" id="how-it-works">
   <div class="wrap">
-    <div class="section-label center r">FEATURES</div>
-    <h2 style="font-size:clamp(1.8rem,3.4vw,2.6rem);font-weight:700;color:var(--ink);letter-spacing:-.028em;text-align:center" class="r">Push once. Query forever.</h2>
-    <p style="text-align:center;max-width:460px;margin:14px auto 0;font-size:.93rem" class="r">Every API in your registry — live over MCP, schema-correct mocks, owned by a team, linted on every push.</p>
-
-    <div class="bento-grid">
-
-      <!-- CARD 1: MCP Exposure — orbital hub with animated connection pulses -->
-      <div class="feat-card r">
-        <div class="fc-visual" style="padding:0;background:radial-gradient(ellipse at 50% 55%,rgba(91,94,247,.16) 0%,rgba(91,94,247,.04) 45%,transparent 70%)">
-          <div class="mcp-scene">
-            <!-- animated SVG lines with travelling dots -->
-            <svg class="mcp-svg" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
-              <defs>
-                <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="rgba(91,94,247,0)"/>
-                  <stop offset="50%" stop-color="rgba(124,126,255,0.5)"/>
-                  <stop offset="100%" stop-color="rgba(91,94,247,0)"/>
-                </linearGradient>
-              </defs>
-              <!-- lines from center to each node -->
-              <line x1="150" y1="150" x2="44"  y2="52"  stroke="url(#lg1)" stroke-width="1"/>
-              <line x1="150" y1="150" x2="150" y2="30"  stroke="url(#lg1)" stroke-width="1"/>
-              <line x1="150" y1="150" x2="256" y2="52"  stroke="url(#lg1)" stroke-width="1"/>
-              <line x1="150" y1="150" x2="24"  y2="150" stroke="url(#lg1)" stroke-width="1"/>
-              <line x1="150" y1="150" x2="276" y2="150" stroke="url(#lg1)" stroke-width="1"/>
-              <line x1="150" y1="150" x2="64"  y2="262" stroke="url(#lg1)" stroke-width="1"/>
-              <line x1="150" y1="150" x2="236" y2="262" stroke="url(#lg1)" stroke-width="1"/>
-              <!-- travelling pulse dots -->
-              <circle r="3" fill="#818cf8" opacity="0.9" filter="url(#glow)">
-                <animateMotion dur="2.2s" repeatCount="indefinite" begin="0s">
-                  <mpath href="#p1"/>
-                </animateMotion>
-                <animate attributeName="opacity" values="0;1;1;0" dur="2.2s" repeatCount="indefinite"/>
-              </circle>
-              <circle r="3" fill="#818cf8" opacity="0.9">
-                <animateMotion dur="2.2s" repeatCount="indefinite" begin="0.75s">
-                  <mpath href="#p2"/>
-                </animateMotion>
-                <animate attributeName="opacity" values="0;1;1;0" dur="2.2s" repeatCount="indefinite" begin="0.75s"/>
-              </circle>
-              <circle r="3" fill="#818cf8" opacity="0.9">
-                <animateMotion dur="2.2s" repeatCount="indefinite" begin="1.5s">
-                  <mpath href="#p3"/>
-                </animateMotion>
-                <animate attributeName="opacity" values="0;1;1;0" dur="2.2s" repeatCount="indefinite" begin="1.5s"/>
-              </circle>
-              <!-- hidden paths for animateMotion -->
-              <path id="p1" d="M150,150 L44,52"   fill="none"/>
-              <path id="p2" d="M150,150 L276,150"  fill="none"/>
-              <path id="p3" d="M150,150 L64,262"   fill="none"/>
-              <defs><filter id="glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-            </svg>
-            <!-- glowing hub -->
-            <div class="mcp-hub">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(220,220,255,.9)" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            </div>
-            <!-- 7 floating client nodes -->
-            <div class="mcp-node" style="top:4%;left:7%">
-              <div class="mn-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-              </div>
-              <span class="mn-label">cursor</span>
-            </div>
-            <div class="mcp-node" style="top:2%;left:50%;transform:translateX(-50%)" >
-              <div class="mn-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32"/></svg>
-              </div>
-              <span class="mn-label">claude</span>
-            </div>
-            <div class="mcp-node" style="top:4%;right:7%">
-              <div class="mn-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              </div>
-              <span class="mn-label">web</span>
-            </div>
-            <div class="mcp-node" style="top:44%;left:0%">
-              <div class="mn-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-              </div>
-              <span class="mn-label">github</span>
-            </div>
-            <div class="mcp-node" style="top:44%;right:0%">
-              <div class="mn-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              </div>
-              <span class="mn-label">cline</span>
-            </div>
-            <div class="mcp-node" style="bottom:4%;left:14%">
-              <div class="mn-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-              </div>
-              <span class="mn-label">continue</span>
-            </div>
-            <div class="mcp-node" style="bottom:4%;right:14%">
-              <div class="mn-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              </div>
-              <span class="mn-label">spec</span>
-            </div>
-          </div>
-        </div>
-        <div class="fc-text">
-          <div class="fc-title">Automatic MCP Exposure</div>
-          <div class="fc-body">Push once — Cursor, Claude Code, Continue.dev and any MCP client query your APIs live. Always current, never pasted.</div>
-        </div>
-      </div>
-
-      <!-- CARD 2: Team Ownership — rich app UI window -->
-      <div class="feat-card r r2">
-        <div class="fc-visual" style="align-items:flex-start;padding:28px 24px 0;background:linear-gradient(160deg,rgba(34,211,160,.05) 0%,transparent 55%)">
-          <div class="app-window" style="width:100%">
-            <div class="aw-bar">
-              <div class="aw-dot"></div><div class="aw-dot"></div><div class="aw-dot"></div>
-              <span class="aw-title">spec0 — API Registry</span>
-              <!-- top-right mini badge -->
-              <span style="margin-left:auto;font-family:var(--mono);font-size:.6rem;color:var(--green);background:rgba(34,211,160,.1);border:1px solid rgba(34,211,160,.2);padding:2px 8px;border-radius:4px">4 APIs live</span>
-            </div>
-            <div class="aw-body">
-              <div class="aw-sidebar">
-                <div class="aw-sidebar-label">MAIN</div>
-                <div class="aw-nav">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                  Dashboard
-                </div>
-                <div class="aw-nav active">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                  APIs
-                </div>
-                <div class="aw-nav">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                  Teams
-                </div>
-                <div class="aw-nav">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                  Mocks
-                </div>
-                <div class="aw-nav">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                  Environments
-                </div>
-              </div>
-              <div class="aw-main">
-                <div class="aw-main-title">All APIs (4)</div>
-                <div class="aw-api-row">
-                  <div>
-                    <div class="aw-api-name">orders-api</div>
-                    <div class="aw-api-team">Team: Payments</div>
-                  </div>
-                  <span class="aw-api-ver">v2.1</span>
-                  <span class="aw-api-live">MCP live</span>
-                </div>
-                <div class="aw-api-row">
-                  <div>
-                    <div class="aw-api-name">payments-api</div>
-                    <div class="aw-api-team">Team: Payments</div>
-                  </div>
-                  <span class="aw-api-ver">v1.4</span>
-                  <span class="aw-api-live">MCP live</span>
-                </div>
-                <div class="aw-api-row">
-                  <div>
-                    <div class="aw-api-name">auth-service</div>
-                    <div class="aw-api-team">Team: Platform</div>
-                  </div>
-                  <span class="aw-api-ver">v3.0</span>
-                  <span class="aw-api-live">MCP live</span>
-                </div>
-                <div class="aw-api-row" style="opacity:.32">
-                  <div>
-                    <div class="aw-api-name">notifications</div>
-                    <div class="aw-api-team">Team: Growth</div>
-                  </div>
-                  <span class="aw-api-ver">v1.0</span>
-                  <span style="font-family:var(--mono);font-size:.61rem;color:var(--muted)">Not set</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="fc-text">
-          <div class="fc-title">Team Ownership</div>
-          <div class="fc-body">APIs know their team. Change alerts and subscriber notifications route to the team behind the surface — not the all-hands inbox.</div>
-        </div>
-      </div>
-
-      <!-- CARD 3: Git-native Registry — floating spec/git icon cluster -->
-      <div class="feat-card r">
-        <div class="fc-visual" style="padding:0;background:radial-gradient(ellipse at 50% 40%,rgba(91,94,247,.1) 0%,transparent 65%);flex-direction:column;justify-content:center;gap:14px">
-          <!-- top row of floating icon badges -->
-          <div style="display:flex;gap:12px;align-items:center;justify-content:center">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-              <div class="mn-icon" style="width:52px;height:52px;border-radius:16px">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              </div>
-              <span class="mn-label">openapi.yaml</span>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-              <div class="mn-icon" style="width:64px;height:64px;border-radius:18px;border-color:rgba(91,94,247,.35);background:rgba(91,94,247,.12)">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(160,165,255,.95)" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M3 12h3m12 0h3M12 3v3m0 12v3M6.34 6.34l2.12 2.12m7.08 7.08 2.12 2.12M6.34 17.66l2.12-2.12m7.08-7.08 2.12-2.12"/></svg>
-              </div>
-              <span class="mn-label" style="color:var(--primary-2)">spec0</span>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-              <div class="mn-icon" style="width:52px;height:52px;border-radius:16px">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-              </div>
-              <span class="mn-label">git</span>
-            </div>
-          </div>
-          <!-- connecting arrows -->
-          <div style="display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--mono);font-size:.65rem;color:var(--muted)">
-            <span style="background:var(--surface);border:1px solid var(--border);padding:4px 10px;border-radius:6px">push</span>
-            <svg width="16" height="10" viewBox="0 0 16 10" fill="none"><path d="M1 5h14M10 1l4 4-4 4" stroke="rgba(91,94,247,.5)" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <span style="background:rgba(91,94,247,.1);border:1px solid rgba(91,94,247,.25);padding:4px 10px;border-radius:6px;color:var(--primary-2)">registry</span>
-            <svg width="16" height="10" viewBox="0 0 16 10" fill="none"><path d="M1 5h14M10 1l4 4-4 4" stroke="rgba(34,211,160,.5)" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <span style="background:rgba(34,211,160,.08);border:1px solid rgba(34,211,160,.2);padding:4px 10px;border-radius:6px;color:var(--green)">MCP live</span>
-          </div>
-          <!-- bottom: 3 small tool tags -->
-          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:0 20px">
-            <span style="font-family:var(--mono);font-size:.63rem;color:var(--body);background:var(--surface);border:1px solid var(--border);padding:4px 10px;border-radius:5px">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>spectral lint
-            </span>
-            <span style="font-family:var(--mono);font-size:.63rem;color:var(--body);background:var(--surface);border:1px solid var(--border);padding:4px 10px;border-radius:5px">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>diff check
-            </span>
-            <span style="font-family:var(--mono);font-size:.63rem;color:var(--body);background:var(--surface);border:1px solid var(--border);padding:4px 10px;border-radius:5px">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>mcp auto
-            </span>
-          </div>
-        </div>
-        <div class="fc-text">
-          <div class="fc-title">Git-native Registry</div>
-          <div class="fc-body">Every internal API searchable in one place. Push from CI, lint on every commit, expose over MCP automatically.</div>
-        </div>
-      </div>
-
-      <!-- CARD 4: CI Publishing — spec diff view with status badges -->
-      <div class="feat-card r r2">
-        <div class="fc-visual" style="align-items:flex-start;padding:24px 20px 0;background:linear-gradient(170deg,rgba(240,162,42,.04) 0%,transparent 55%)">
-          <div class="code-win" style="width:100%">
-            <div class="cw-bar">
-              <div class="cw-dot"></div><div class="cw-dot"></div><div class="cw-dot"></div>
-              <div class="cw-tabs">
-                <span class="cw-tab active">openapi.yaml</span>
-                <span class="cw-tab">spec0.yml</span>
-              </div>
-              <!-- CI status pill top right -->
-              <span style="margin-left:auto;font-family:var(--mono);font-size:.6rem;color:var(--green);background:rgba(34,211,160,.08);border:1px solid rgba(34,211,160,.2);padding:2px 8px;border-radius:4px;display:flex;align-items:center;gap:5px">
-                <span style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);display:inline-block"></span>CI pass
-              </span>
-            </div>
-            <div class="cw-body">
-              <div class="cw-line"><span class="cw-ln">1</span><span class="cw-code"><span class="cw-kw">openapi:</span> <span class="cw-st">'3.1.0'</span></span></div>
-              <div class="cw-line"><span class="cw-ln">2</span><span class="cw-code"><span class="cw-kw">info:</span></span></div>
-              <div class="cw-line"><span class="cw-ln">3</span><span class="cw-code">&nbsp;&nbsp;<span class="cw-kw">title:</span> <span class="cw-st">Orders API</span></span></div>
-              <div class="cw-line"><span class="cw-ln">4</span><span class="cw-code">&nbsp;&nbsp;<span class="cw-kw">version:</span> <span class="cw-st">2.1.0</span></span></div>
-              <div class="cw-line cw-hi" style="background:rgba(34,211,160,.06)"><span class="cw-ln">5</span><span class="cw-code" style="color:var(--green)">+ &nbsp;<span class="cw-kw">x-spec0-team:</span> <span class="cw-st">payments</span></span></div>
-              <div class="cw-line cw-hi" style="background:rgba(240,162,42,.05)"><span class="cw-ln">6</span><span class="cw-code" style="color:var(--amber)">~ &nbsp;<span class="cw-cm"># ✓ Lint: 0 errors · 0 breaking</span></span></div>
-              <div class="cw-line"><span class="cw-ln">7</span><span class="cw-code"><span class="cw-kw">paths:</span></span></div>
-              <div class="cw-line"><span class="cw-ln">8</span><span class="cw-code">&nbsp;&nbsp;<span class="cw-fn">/orders/{id}/refunds:</span></span></div>
-              <div class="cw-line"><span class="cw-ln">9</span><span class="cw-code">&nbsp;&nbsp;&nbsp;&nbsp;<span class="cw-kw">post:</span></span></div>
-            </div>
-          </div>
-        </div>
-        <div class="fc-text">
-          <div class="fc-title">CI-native Publishing</div>
-          <div class="fc-body">Spectral lint and breaking-change detection on every push. Block what shouldn't reach your agents before it ships.</div>
-        </div>
-      </div>
-
-      <!-- CARD 5: Schema Mocks — full-width with icon cluster + mock response preview -->
-      <div class="feat-card r" style="flex-direction:row;align-items:stretch;height:180px">
-        <div class="fc-visual" style="flex:1;padding:0 40px;border-right:1px solid var(--border);border-top:none;justify-content:center;align-items:center">
-          <div class="pipeline">
-            <div class="pipe-step">
-              <div class="pipe-icon done">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              </div>
-              <div class="pipe-label done">push spec</div>
-            </div>
-            <div class="pipe-arrow"></div>
-            <div class="pipe-step">
-              <div class="pipe-icon done">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-              <div class="pipe-label done">lint</div>
-            </div>
-            <div class="pipe-arrow"></div>
-            <div class="pipe-step">
-              <div class="pipe-icon done">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>
-              </div>
-              <div class="pipe-label done">diff</div>
-            </div>
-            <div class="pipe-arrow"></div>
-            <div class="pipe-step">
-              <div class="pipe-icon active">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              </div>
-              <div class="pipe-label active">MCP live</div>
-            </div>
-            <div class="pipe-arrow"></div>
-            <div class="pipe-step">
-              <div class="pipe-icon done">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-              </div>
-              <div class="pipe-label done">mock ready</div>
-            </div>
-          </div>
-        </div>
-        <div class="fc-text" style="flex:0 0 300px;border-top:none;padding:28px 28px;display:flex;flex-direction:column;justify-content:center">
-          <div class="fc-title">Schema-correct Mocks</div>
-          <div class="fc-body">From push to live mock in one step. Open source (MIT) — self-hostable in your VPC or CI.</div>
-        </div>
-      </div>
-
+    <div class="sec-hdr sr">
+      <span class="eyebrow">How it works</span>
+      <h2>From zero to agent-ready<br>in three commands.</h2>
     </div>
-  </div>
-</section>
 
-<!-- ───── HOW IT WORKS ───────────────────────────────────── -->
-<section class="how-section" id="how-it-works">
-  <div class="wrap">
-    <div class="section-label center r">HOW IT WORKS</div>
-    <h2 style="font-size:clamp(1.7rem,3.2vw,2.4rem);font-weight:700;color:var(--ink);letter-spacing:-.025em;text-align:center" class="r">Three steps. Then your agents just work.</h2>
-
-    <div class="steps-grid">
-      <div class="step-cell r">
-        <div class="step-n">01</div>
-        <div class="step-h">Push your spec</div>
-        <p class="step-p">One CLI install, OAuth login, and your spec lives in spec0's registry — scoped to your org, versioned, linted.</p>
-        <div class="step-code">
-          <span class="c-d">$</span> <span class="c-p">npm install</span> -g @spec0/cli<br>
-          <span class="c-d">$</span> <span class="c-p">spec0</span> auth login<br>
-          <span class="c-d">$</span> <span class="c-p">spec0</span> push openapi.yaml<br>
-          <span class="c-g">✓ Published → orders-api v2.1</span>
+    <div class="steps-row">
+      <div class="step-cell sr">
+        <div class="step-num"><span>01</span></div>
+        <h3>Push your spec</h3>
+        <p>One CLI install. OAuth login. Your spec is now in spec0's registry, scoped to your org, linted, versioned.</p>
+        <div class="sc">
+<span class="d">$</span> <span class="p">npm install</span> -g @spec0/cli<br>
+<span class="d">$</span> <span class="p">spec0</span> auth login<br>
+<span class="d">$</span> <span class="p">spec0</span> push openapi.yaml<br>
+<span class="g">✓ Published → orders-api v2.1</span>
         </div>
       </div>
-      <div class="step-cell r r2">
-        <div class="step-n">02</div>
-        <div class="step-h">Wire your MCP client</div>
-        <p class="step-p">One command writes the MCP config. No JSON editing. Cursor, Claude Code, or any MCP client immediately knows your API exists.</p>
-        <div class="step-code">
-          <span class="c-d">$</span> <span class="c-p">spec0</span> mcp install --client cursor<br>
-          <span class="c-d"># or:</span> --client claude-code<br>
-          <span class="c-g">✓ Config written to ~/.cursor/mcp.json</span><br>
-          <span class="c-g">✓ 12 APIs now queryable</span>
+      <div class="step-cell sr">
+        <div class="step-num"><span>02</span></div>
+        <h3>Wire your MCP client</h3>
+        <p>Writes the MCP config for you. No JSON editing. Cursor, Claude Code, or any MCP client immediately knows your API exists.</p>
+        <div class="sc">
+<span class="d">$</span> <span class="p">spec0</span> mcp install --client cursor<br>
+<span class="d"># or:</span> --client claude-code<br>
+<span class="g">✓ Config written to ~/.cursor/mcp.json</span><br>
+<span class="g">✓ 12 APIs now queryable</span>
         </div>
       </div>
-      <div class="step-cell r r3">
-        <div class="step-n">03</div>
-        <div class="step-h">Ask your agent anything</div>
-        <p class="step-p">The agent retrieves only the operation it needs — always current, ~400 tokens, never a full spec dump. You get correct code on the first try.</p>
-        <div class="step-code">
-          <blockquote>"Using our Orders API,<br>write a refund handler."</blockquote>
-        </div>
+      <div class="step-cell sr">
+        <div class="step-num"><span>03</span></div>
+        <h3>Ask your agent anything</h3>
+        <p>The agent retrieves the operation it needs — always current, ~400 tokens, never a full spec dump. Correct code on the first try.</p>
+        <blockquote>"Using our Orders API, write a refund handler."</blockquote>
       </div>
     </div>
 
-    <div class="oneliner r">
-      <span class="ol-label">or one line →</span>
-      <div class="install-cmd" style="flex:1;margin:0" id="one-cmd" onclick="copyInstall(this)">
+    <div class="oneliner sr">
+      <span class="oneliner-label">Or in one line →</span>
+      <div class="cmd" onclick="copyCmd(this,'ocmd')">
         <span class="ps">$</span>
-        <span class="cmd-txt" id="cmd-txt-2">npm install -g @spec0/cli && spec0 mcp install --client cursor</span>
-        <button class="copy-btn" id="copy-btn-2">copy</button>
+        <span class="txt" id="ocmd">npm install -g @spec0/cli &amp;&amp; spec0 mcp install --client cursor</span>
+        <button class="copy-btn">Copy</button>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ───── STACK STRIP ────────────────────────────────────── -->
-<section class="stack-section">
+<!-- ══════════════ FEATURES ══════════════ -->
+<section class="features" id="product">
   <div class="wrap">
-    <div class="section-label center r">WORKS WITH YOUR STACK</div>
-    <h2 style="font-size:clamp(1.5rem,2.8vw,2rem);font-weight:700;color:var(--ink);letter-spacing:-.025em;text-align:center;max-width:560px;margin:0 auto" class="r">If your client speaks MCP,<br>spec0 works.</h2>
+    <div class="sec-hdr sr">
+      <span class="eyebrow">The foundation</span>
+      <h2>The MCP layer is only as good<br>as its source of truth.</h2>
+      <p>Underneath the wedge: a git-native registry for every internal API. Searchable, owned, tested — so what your agents retrieve is always the real contract.</p>
+    </div>
 
-    <div class="stack-inner r">
-
-      <!-- LEFT: MCP Clients -->
-      <div class="stack-col">
-        <div class="stack-col-label">MCP clients</div>
-        <div class="tool-grid">
-
-          <div class="tool-card">
-            <div class="tc-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-            </div>
-            <span class="tc-name">Cursor</span>
-          </div>
-
-          <div class="tool-card">
-            <div class="tc-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h4M9 15h5"/></svg>
-            </div>
-            <span class="tc-name">Claude Code</span>
-          </div>
-
-          <div class="tool-card">
-            <div class="tc-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            </div>
-            <span class="tc-name">Claude Desktop</span>
-          </div>
-
-          <div class="tool-card">
-            <div class="tc-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            </div>
-            <span class="tc-name">Continue.dev</span>
-          </div>
-
-          <div class="tool-card">
-            <div class="tc-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            </div>
-            <span class="tc-name">Cline</span>
-          </div>
-
-          <div class="tool-card">
-            <div class="tc-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M3 12h3m12 0h3M12 3v3m0 12v3M6.34 6.34l2.12 2.12m7.08 7.08 2.12 2.12M6.34 17.66l2.12-2.12m7.08-7.08 2.12-2.12"/></svg>
-            </div>
-            <span class="tc-name">Any MCP client</span>
-          </div>
-
-        </div>
-
-        <!-- privacy trust card -->
-        <div class="stack-trust" style="margin-top:20px">
-          <div class="st-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
-          <div class="st-text">
-            <div class="st-headline">spec0 never sees your prompts</div>
-            <div class="st-sub">Only spec content is served over MCP. Your model, your key, your conversation — completely private.</div>
-          </div>
-        </div>
+    <div class="feat-grid">
+      <div class="feat-card sr">
+        <div class="feat-icon">🔎</div>
+        <h3>Registry</h3>
+        <p>Every API across every team — searchable, navigable, owned. Engineers find what they need in five minutes; agents find it over MCP in one call.</p>
+        <code>🔎 payments.charges.api</code>
       </div>
-
-      <!-- DIVIDER -->
-      <div class="stack-divider"></div>
-
-      <!-- RIGHT: AI Providers -->
-      <div class="stack-col">
-        <div class="stack-col-label">AI providers</div>
-        <div class="tool-grid">
-
-          <div class="tool-card">
-            <div class="tc-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-            </div>
-            <span class="tc-name">OpenAI</span>
-          </div>
-
-          <div class="tool-card">
-            <div class="tc-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(180,185,255,.8)" stroke-width="1.6"><path d="M12 2a9 9 0 0 1 9 9c0 3.87-2.44 7.17-5.9 8.5L12 22l-3.1-2.5C5.44 18.17 3 14.87 3 11a9 9 0 0 1 9-9z"/></svg>
-            </div>
-            <span class="tc-name">Anthropic</span>
-          </div>
-
-          <div class="tool-card roadmap">
-            <div class="tc-icon" style="width:28px;height:28px;border-radius:7px">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <span class="tc-road">Bedrock · Azure OpenAI — roadmap</span>
-          </div>
-
-        </div>
-
-        <!-- your account trust card -->
-        <div class="stack-trust" style="margin-top:20px">
-          <div class="st-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          </div>
-          <div class="st-text">
-            <div class="st-headline">Your provider. Your account. Your bill.</div>
-            <div class="st-sub">AI workflows run on your own API key. spec0 never proxies your requests or holds your credentials.</div>
-          </div>
-        </div>
-
-        <!-- bottom stat row -->
-        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-          <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
-            <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--ink);letter-spacing:-.02em">0</div>
-            <div style="font-family:var(--mono);font-size:.65rem;color:var(--muted);margin-top:3px">prompts seen by spec0</div>
-          </div>
-          <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
-            <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--ink);letter-spacing:-.02em">100%</div>
-            <div style="font-family:var(--mono);font-size:.65rem;color:var(--muted);margin-top:3px">traffic on your account</div>
-          </div>
-          <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
-            <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--green);letter-spacing:-.02em">EU</div>
-            <div style="font-family:var(--mono);font-size:.65rem;color:var(--muted);margin-top:3px">hosted, encrypted at rest</div>
-          </div>
-        </div>
+      <div class="feat-card sr">
+        <div class="feat-icon">🧪</div>
+        <h3>Schema-correct mocks</h3>
+        <p>Mocks generated from every spec, correct to the contract. The same engine is open source (MIT) and self-hostable in your VPC or CI.</p>
+        <code>mock://orders-api.spec0.app</code>
       </div>
+      <div class="feat-card sr">
+        <div class="feat-icon">⚡</div>
+        <h3>Automatic MCP exposure</h3>
+        <p>Push once with the CLI and every API is queryable by your agents forever. Same auth, 1–2 operations per call, no spec-pasting ever again.</p>
+        <code>https://api.spec0.io/mcp</code>
+      </div>
+    </div>
 
+    <div class="feat-mini-grid" style="margin-top:16px">
+      <div class="feat-mini sr">
+        <h4>Team ownership</h4>
+        <p>Teams own APIs; APIs know their team. Reviews and notifications route to the team behind the surface, not the all-hands inbox.</p>
+      </div>
+      <div class="feat-mini sr">
+        <h4>Subscribers</h4>
+        <p>Team-to-team contracts with explicit approval — change notifications and a direct channel to the owning team.</p>
+      </div>
+      <div class="feat-mini sr">
+        <h4>Git-native publishing</h4>
+        <p>Publish from CI with one CLI call. Spectral lint and breaking-change detection run on every publish — block what shouldn't ship.</p>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:32px" class="sr">
+      <span style="font-size:.86rem;color:var(--muted)">
+        <strong style="color:var(--ink)">spec-0/mock-server</strong> — self-host the same mock engine. Open source, MIT.
+        <a href="https://github.com/spec-0/mock-server" style="margin-left:6px">View on GitHub ↗</a>
+      </span>
     </div>
   </div>
 </section>
 
-<!-- ───── PRICING ────────────────────────────────────────── -->
-<section class="pricing-section" id="pricing">
+<!-- ══════════════ PRO STRIP ══════════════ -->
+<section class="pro-strip" id="ai">
   <div class="wrap">
-    <div class="section-label center r">PRICING</div>
-    <h2 style="font-size:clamp(1.7rem,3.2vw,2.4rem);font-weight:700;color:var(--ink);letter-spacing:-.025em;text-align:center" class="r">Simple pricing. Serious output.</h2>
+    <div class="sec-hdr sr" style="max-width:700px">
+      <span class="eyebrow">Pro</span>
+      <h2>Pro also watches your<br><span class="g-text-cyan">specs for you.</span></h2>
+      <p>Connect your OpenAI or Anthropic key — every published spec gets reviewed, diffed, and summarized automatically. Runs on your account, your bill.</p>
+    </div>
 
-    <div class="price-grid">
-      <div class="price-card r">
-        <div class="price-name">Free</div>
-        <div class="price-desc">For open APIs and individual developers.</div>
-        <div class="price-amt">$0 <small>/month</small></div>
-        <div class="price-note">No card required.</div>
-        <ul class="price-list">
+    <div class="pro-grid">
+      <div class="pro-card sr">
+        <h4>AI Review</h4>
+        <p>A senior-designer second pass on every spec — naming, response shapes, REST anti-patterns caught before they reach your agents.</p>
+      </div>
+      <div class="pro-card sr">
+        <h4>Change Review</h4>
+        <p>A second opinion on what each PR actually breaks — semantic regressions Spectral can't catch, surfaced before merge.</p>
+      </div>
+      <div class="pro-card sr">
+        <h4>Auto Changelog</h4>
+        <p>Customer-readable changelogs drafted from the diff, in your team's tone — not raw commit messages, not another ticket.</p>
+      </div>
+      <div class="pro-card sr">
+        <h4>Monday Brief</h4>
+        <p>Weekly read on what moved, what's risky, and where the new dependencies landed across your entire API surface.</p>
+      </div>
+    </div>
+
+    <p class="pro-bill sr">Runs on <strong>your account, your bill</strong> — your DPA, your audit trail. spec0 never sees your prompts or model output.</p>
+  </div>
+</section>
+
+<!-- ══════════════ STACK ══════════════ -->
+<section class="stack">
+  <div class="wrap">
+    <div class="sec-hdr sr">
+      <span class="eyebrow">Compatibility</span>
+      <h2>If your client speaks MCP,<br>spec0 works.</h2>
+    </div>
+
+    <div class="chips-row" id="chips">
+      <span class="chip sr">Cursor</span>
+      <span class="chip sr">Claude Code</span>
+      <span class="chip sr">Claude Desktop</span>
+      <span class="chip sr">Continue.dev</span>
+      <span class="chip sr">Cline</span>
+      <span class="chip muted sr">+ any MCP client</span>
+    </div>
+    <div class="chips-row" style="margin-top:12px">
+      <span class="chip sr">OpenAI</span>
+      <span class="chip sr">Anthropic</span>
+      <span class="chip muted sr">Bedrock · Azure — roadmap</span>
+    </div>
+
+    <p class="stack-note sr"><strong style="color:var(--ink)">Your provider. Your account. Your bill.</strong></p>
+    <p class="stack-sub sr">AI features run on your own OpenAI or Anthropic key — spec0 never proxies your prompts or holds credentials.</p>
+
+    <div class="stats-row">
+      <div class="stat-cell sr">
+        <span class="stat-num g-text" id="stat-0">0</span>
+        <span class="stat-label">prompts seen by spec0</span>
+      </div>
+      <div class="stat-cell sr">
+        <span class="stat-num g-text" id="stat-1">100%</span>
+        <span class="stat-label">traffic on your account</span>
+      </div>
+      <div class="stat-cell sr">
+        <span class="stat-num g-text">EU</span>
+        <span class="stat-label">hosted, encrypted at rest</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ PRICING ══════════════ -->
+<section class="pricing" id="pricing">
+  <div class="wrap">
+    <div class="sec-hdr sr">
+      <span class="eyebrow">Pricing</span>
+      <h2>Free to publish in public.<br>One flat price to go private.</h2>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="plan sr">
+        <h3>Free</h3>
+        <p class="for">For open APIs and individual developers.</p>
+        <div class="price">$0 <small>/ month</small></div>
+        <p class="price-note">No card required.</p>
+        <ul>
           <li>Publish OpenAPI specs to the public registry</li>
           <li>Public specs queryable by any agent over MCP</li>
-          <li>spec0 CLI + GitHub Actions, forever</li>
+          <li>spec0 CLI + GitHub Actions, free forever</li>
           <li>Open-source mock server — self-host anywhere</li>
           <li>Semantic search built in</li>
         </ul>
-        <div class="price-cta">
+        <div class="cta-row">
           <a class="btn btn-ghost" href="https://app.spec0.io">Start for free →</a>
         </div>
-        <div class="price-disq">If you have fewer than ~3 internal APIs, pasting works fine. Come back when it doesn't.</div>
+        <p class="disq">If you have fewer than ~3 internal APIs, pasting works fine. Come back when it doesn't.</p>
       </div>
 
-      <div class="price-card pro r r2">
-        <div class="price-tag">No seats · no per-API metering</div>
-        <div class="price-name">Pro</div>
-        <div class="price-desc">Your internal APIs, private and queryable by every agent.</div>
-        <div class="price-amt">€199 <small>/month per org</small></div>
-        <div class="price-note">One flat price. Unlimited users, teams, and APIs.</div>
-        <ul class="price-list">
+      <div class="plan pro-plan sr">
+        <span class="plan-ribbon">No seats · no per-API metering</span>
+        <h3>Pro</h3>
+        <p class="for">Your internal APIs, private and queryable by every agent.</p>
+        <div class="price">€199 <small>/ month per org</small></div>
+        <p class="price-note">One flat price. Unlimited users, teams, and APIs.</p>
+        <ul>
           <li>Private registry for all your internal APIs</li>
           <li>Automatic private MCP exposure — always current</li>
           <li>Unlimited users, teams, APIs, and mocks</li>
@@ -1643,80 +1018,102 @@ footer {
           <li>Org-wide governance + custom Spectral rulesets</li>
           <li>SSO/SAML, RBAC, audit retention, DPA</li>
         </ul>
-        <div class="price-cta">
+        <div class="cta-row">
           <a class="btn btn-primary" href="https://app.spec0.io">Start free, upgrade in-app →</a>
           <a class="btn btn-ghost" href="https://cal.eu/spec0/demo">Book 20 min</a>
         </div>
       </div>
     </div>
 
-    <p class="ent-note r">Enterprise — on-prem, custom DPA, bespoke SSO? <a href="https://cal.eu/spec0/demo">Talk to us</a>.</p>
-    <div class="trust-row r">
-      <span>EU hosted</span><span>Encrypted at rest</span>
-      <span><a href="https://status.spec0.io" style="color:var(--primary-2)">Status page</a></span>
-      <span>DPA on request</span><span>Open-source CLI & mocks</span>
+    <p class="ent sr">Enterprise — on-prem, custom DPA, bespoke SSO? <a href="https://cal.eu/spec0/demo">Talk to us</a>.</p>
+    <div class="trust-row sr">
+      <span>🇪🇺 EU hosted</span>
+      <span>🔒 Encrypted at rest</span>
+      <span>📊 <a href="https://status.spec0.io">Status page</a></span>
+      <span>🛡️ DPA on request</span>
+      <span>⚙️ Open-source CLI &amp; mocks</span>
     </div>
   </div>
 </section>
 
-<!-- ───── FAQ ────────────────────────────────────────────── -->
-<section class="faq-section">
-  <div class="wrap-sm">
-    <div class="section-label r">FAQ</div>
-    <h2 style="font-size:clamp(1.5rem,2.8vw,2rem);font-weight:700;color:var(--ink);letter-spacing:-.025em" class="r">Before you deploy.</h2>
-
+<!-- ══════════════ FAQ ══════════════ -->
+<section class="faq">
+  <div class="wrap">
+    <div class="sec-hdr sr">
+      <span class="eyebrow">FAQ</span>
+      <h2>Reasonable questions<br>before you push.</h2>
+    </div>
     <div class="faq-list">
-      <details class="r">
+      <details class="sr">
         <summary>Where does my OpenAPI spec live? <span class="plus">+</span></summary>
         <div class="faq-a">Encrypted at rest in EU-hosted Postgres. You can delete any spec via CLI or API at any time. We don't share, train on, or expose your specs.</div>
       </details>
-      <details class="r">
+      <details class="sr">
         <summary>Does spec0 see my LLM prompts? <span class="plus">+</span></summary>
-        <div class="faq-a">No. Your agent runs on your OpenAI or Anthropic account. spec0 only serves spec content over MCP — we never see your prompts, your model output, or your API key.</div>
+        <div class="faq-a">No. Your agent runs on your OpenAI or Anthropic account. spec0 only serves spec content over MCP — we never see your prompts, your model output, or your model key.</div>
       </details>
-      <details class="r">
+      <details class="sr">
         <summary>How is this different from Postman or SwaggerHub? <span class="plus">+</span></summary>
-        <div class="faq-a">They're API workspaces built for humans clicking through docs. spec0 is built for agents — a registry whose primary consumer is an MCP query from Cursor or Claude Code. We do the registry table stakes (lint, diff, mocks, ownership) but the product is the live MCP layer on top, not the GUI.</div>
+        <div class="faq-a">They're API workspaces built for humans clicking through docs and collections. spec0 is built for agents: a registry whose primary consumer is an MCP query from Cursor or Claude Code. We do the registry table stakes — lint, diff, mocks, ownership — but the product is the live MCP layer on top, not the GUI.</div>
       </details>
-      <details class="r">
+      <details class="sr">
         <summary>What if the MCP server goes down? <span class="plus">+</span></summary>
-        <div class="faq-a">Public uptime history at <a href="https://status.spec0.io" style="color:var(--primary-2)">status.spec0.io</a>. If MCP is unreachable, your agent falls back to whatever context it already has — your code doesn't break.</div>
+        <div class="faq-a">Status page at <a href="https://status.spec0.io">status.spec0.io</a> with public uptime history. If MCP is unreachable, your agent falls back to whatever context it already has — your code doesn't break.</div>
       </details>
-      <details class="r">
+      <details class="sr">
         <summary>Can I self-host? <span class="plus">+</span></summary>
-        <div class="faq-a">The mock server is open source today (MIT). The CLI is open source (Apache-2.0). Self-host of the full registry + MCP layer is on the roadmap for Enterprise.</div>
+        <div class="faq-a">The mock server is open source today (MIT). The CLI is open source (Apache-2.0). Self-host of the registry + MCP layer is on the roadmap for Enterprise customers.</div>
       </details>
-      <details class="r">
+      <details class="sr">
         <summary>Why pay? <span class="plus">+</span></summary>
-        <div class="faq-a">You could build it. A webhook for spec drift, a CI gate, a Slack notifier, an OAuth-protected MCP server, a registry. We did. Roadmap covers another year.</div>
+        <div class="faq-a">You could build it yourself. A webhook for spec drift, a CI gate, a Slack notifier, an OAuth-protected MCP server, a registry. We did. Roadmap covers another year.</div>
       </details>
     </div>
   </div>
 </section>
 
-<!-- ───── FINAL CTA ──────────────────────────────────────── -->
+<!-- ══════════════ DESIGN PARTNERS ══════════════ -->
+<section class="partners">
+  <div class="wrap">
+    <div class="partner-box sr">
+      <div>
+        <span class="eyebrow">Design partners</span>
+        <h2>Want to go deeper?</h2>
+        <p class="offer">If you're at a 50–500 person engineering org, use Cursor or Claude Code daily, and have internal OpenAPI specs you'd like your agents to query — we want to talk.</p>
+        <p class="offer" style="margin-top:12px"><strong>Six months of Pro free</strong>, in exchange for two 30-minute conversations as we ship.</p>
+        <div style="margin-top:28px">
+          <a class="btn btn-ghost" href="mailto:hello@spec0.io">Email us →</a>
+        </div>
+      </div>
+      <div class="founder-quote">
+        <p>"We built spec0 because we got tired of asking 'wait, which API does that?' — and then watching our agents guess."</p>
+        <p class="who">— The spec0 team · building in the open at <a href="https://github.com/spec-0">github.com/spec-0</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FINAL CTA ══════════════ -->
 <section class="final-cta">
   <div class="wrap">
-    <h2 class="r">Your specs are already written.<br>Make them queryable.</h2>
-    <p class="r">Publish to the public registry free with the CLI — every agent in your org queries your APIs in minutes. No card needed.</p>
-    <a class="btn btn-primary r" style="font-size:.92rem;padding:12px 24px" href="https://app.spec0.io">Start free →</a>
-    <div class="install-cmd r" id="final-cmd" onclick="copyInstall(this)" style="max-width:520px;margin:24px auto 0">
+    <h2 class="sr">Push once. Every agent queries<br>your APIs forever.</h2>
+    <p class="sub sr">Publish to the public registry free with the CLI — queryable over MCP in minutes. No card needed.</p>
+    <a class="btn btn-primary sr" href="https://app.spec0.io" style="font-size:.95rem;padding:13px 26px">Start free →</a>
+    <div class="cmd sr" onclick="copyCmd(this,'fcmd')" style="max-width:600px;margin:24px auto 0;text-align:left">
       <span class="ps">$</span>
-      <span class="cmd-txt" id="cmd-txt-3">npm i -g @spec0/cli && spec0 mcp install --client cursor</span>
-      <button class="copy-btn" id="copy-btn-3">copy</button>
+      <span class="txt" id="fcmd">npm i -g @spec0/cli &amp;&amp; spec0 mcp install --client cursor</span>
+      <button class="copy-btn">Copy</button>
     </div>
-    <div class="meta r">
-      Questions? <a href="mailto:hello@spec0.io">hello@spec0.io</a> — or <a href="https://cal.eu/spec0/demo">book 20 minutes</a>.
-    </div>
+    <p class="micro sr">Questions? <a href="mailto:hello@spec0.io">hello@spec0.io</a> — or <a href="https://cal.eu/spec0/demo">book 20 minutes</a>.</p>
   </div>
 </section>
 
-<!-- ───── FOOTER ────────────────────────────────────────── -->
+<!-- ══════════════ FOOTER ══════════════ -->
 <footer>
   <div class="wrap">
-    <div class="foot-inner">
+    <div class="foot-grid">
       <div class="foot-brand">
-        <div class="logo">spec<span>0</span></div>
+        <div class="foot-logo">spec<span>0</span></div>
         <p>The MCP layer for your internal APIs. Built for AI agents.</p>
         <div class="foot-ship">
           <h6>Shipping next</h6>
@@ -1732,8 +1129,8 @@ footer {
         <h5>Product</h5>
         <ul>
           <li><a href="#why">Why spec0</a></li>
-          <li><a href="#features">Features</a></li>
-          <li><a href="#how-it-works">How it works</a></li>
+          <li><a href="#product">Platform</a></li>
+          <li><a href="#ai">Pro AI workflows</a></li>
           <li><a href="#pricing">Pricing</a></li>
         </ul>
       </div>
@@ -1762,41 +1159,195 @@ footer {
   </div>
 </footer>
 
+<!-- ══════════════ SCRIPTS ══════════════ -->
 <script>
 /* copy command */
-function copyInstall(el) {
-  const txt = el.querySelector('.cmd-txt').textContent;
+function copyCmd(el, id) {
+  const txt = document.getElementById(id).textContent;
   const btn = el.querySelector('.copy-btn');
   navigator.clipboard.writeText(txt).then(() => {
-    btn.textContent = 'copied ✓'; btn.classList.add('ok');
-    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('ok'); }, 2000);
+    btn.textContent = 'Copied ✓'; btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
   });
 }
+</script>
 
-/* scroll reveal + token bars */
-const io = new IntersectionObserver(entries => {
+<!-- ambient canvas -->
+<script>
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, orbs;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function initOrbs() {
+    orbs = [
+      { x: W*.15, y: H*.1,  r: 520, c: [99,102,241],  a: .18, dx: .18, dy: .1  },
+      { x: W*.85, y: H*.35, r: 380, c: [168,85,247],  a: .16, dx: -.12, dy: .14 },
+      { x: W*.45, y: H*.75, r: 300, c: [236,72,153],  a: .12, dx: .1,  dy: -.1  },
+    ];
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    orbs.forEach(o => {
+      const g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
+      g.addColorStop(0, `rgba(${o.c},${o.a})`);
+      g.addColorStop(1, `rgba(${o.c},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+      ctx.fill();
+      o.x += o.dx; o.y += o.dy;
+      if (o.x < -o.r || o.x > W + o.r) o.dx *= -1;
+      if (o.y < -o.r || o.y > H + o.r) o.dy *= -1;
+    });
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  initOrbs();
+  draw();
+  window.addEventListener('resize', () => { resize(); initOrbs(); });
+})();
+</script>
+
+<!-- anime.js v4 animations -->
+<script type="module">
+import { animate, stagger, createTimeline, onScroll } from 'https://cdn.jsdelivr.net/npm/animejs@4.4.1/+esm';
+
+const reduced = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+if (reduced) {
+  document.querySelectorAll('.sr').forEach(el => { el.style.opacity = 1; });
+  throw new Error('reduced motion');
+}
+
+/* ── Terminal typewriter ── */
+const termLines = [
+  { html: '<span class="c-dim">›</span> <span class="c-cmd">spec0 mcp install --client cursor</span>', delay: 0 },
+  { html: '<span class="c-ok">✓</span> OAuth login complete', delay: 620 },
+  { html: '<span class="c-ok">✓</span> MCP config written to <span class="c-dim">~/.cursor/mcp.json</span>', delay: 1080 },
+  { html: '<span class="c-ok">✓</span> Connected: <span class="c-dim">mcp.spec0.io/org/your-org</span>', delay: 1560 },
+  { html: '<span class="c-arr">→</span> 12 APIs now queryable', delay: 2100 },
+];
+const tb = document.getElementById('term-body');
+termLines.forEach(({ html, delay }) => {
+  setTimeout(() => {
+    const line = document.createElement('div');
+    line.innerHTML = html;
+    line.style.opacity = '0';
+    tb.appendChild(line);
+    animate(line, { opacity: [0, 1], translateX: [-8, 0] }, { duration: 300, ease: 'out(2)' });
+  }, 600 + delay);
+});
+
+/* ── Hero entrance timeline ── */
+const heroTL = createTimeline({ defaults: { ease: 'out(3)', duration: 700 } });
+heroTL
+  .add('#hero-badge',   { opacity: [0, 1], translateY: [16, 0] })
+  .add('#hero-title',   { opacity: [0, 1], translateY: [28, 0] }, 80)
+  .add('#hero-sub',     { opacity: [0, 1], translateY: [20, 0] }, 160)
+  .add('#hero-actions', { opacity: [0, 1], translateY: [16, 0] }, 220)
+  .add('#hero-icp',     { opacity: [0, 1], translateY: [14, 0] }, 300)
+  .add('#hero-term',    { opacity: [0, 1], translateY: [32, 0], scale: [0.97, 1] }, 100);
+
+/* ── Client pills stagger ── */
+animate('#clients-row .client-pill',
+  { opacity: [0, 1], translateY: [12, 0] },
+  { delay: stagger(60, { start: 400 }), duration: 500, ease: 'out(2)' }
+);
+
+/* ── Generic scroll reveal ── */
+const revealIO = new IntersectionObserver((entries) => {
   entries.forEach(e => {
-    if (e.isIntersecting) {
-      e.target.classList.add('in');
-      e.target.querySelectorAll('.t-fill').forEach(f => { f.style.width = f.dataset.w; });
-      io.unobserve(e.target);
-    }
+    if (!e.isIntersecting) return;
+    animate(e.target, { opacity: [0, 1], translateY: [22, 0] },
+      { duration: 650, ease: 'out(3)' });
+    revealIO.unobserve(e.target);
   });
-}, { threshold: 0.1 });
-document.querySelectorAll('.r, .compare-card').forEach(el => io.observe(el));
+}, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+document.querySelectorAll('.sr').forEach(el => revealIO.observe(el));
 
-/* card mousemove glow */
-document.querySelectorAll('.feat-card, .compare-card, .price-card').forEach(card => {
+/* ── Token bars ── */
+const barIO = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const fills = e.target.querySelectorAll('.token-fill');
+    fills.forEach(f => {
+      animate(f, { width: [0, f.dataset.w] }, { duration: 1100, ease: 'out(3)', delay: 200 });
+    });
+    barIO.unobserve(e.target);
+  });
+}, { threshold: 0.2 });
+document.querySelectorAll('.compare-card').forEach(el => barIO.observe(el));
+
+/* ── Stagger grids on scroll ── */
+function staggerOnScroll(containerSel, childSel, delayMs) {
+  const container = document.querySelector(containerSel);
+  if (!container) return;
+  const io = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting) return;
+    animate(container.querySelectorAll(childSel),
+      { opacity: [0, 1], translateY: [28, 0], scale: [0.97, 1] },
+      { duration: 600, delay: stagger(delayMs), ease: 'out(3)' });
+    io.disconnect();
+  }, { threshold: 0.07 });
+  io.observe(container);
+}
+staggerOnScroll('.feat-grid',    '.feat-card', 90);
+staggerOnScroll('.feat-mini-grid', '.feat-mini', 70);
+staggerOnScroll('.pro-grid',     '.pro-card',  80);
+staggerOnScroll('.pricing-grid', '.plan',      120);
+staggerOnScroll('.faq-list',     'details',    65);
+staggerOnScroll('.steps-row',    '.step-cell', 100);
+staggerOnScroll('.stats-row',    '.stat-cell', 110);
+staggerOnScroll('#chips',        '.chip',      55);
+
+/* ── Card radial glow ── */
+document.querySelectorAll('.feat-card,.compare-card,.plan,.pro-card,.feat-mini,.partner-box').forEach(card => {
   card.addEventListener('mousemove', e => {
     const r = card.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width * 100).toFixed(1);
-    const y = ((e.clientY - r.top) / r.height * 100).toFixed(1);
-    card.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(91,94,247,0.1) 0%, transparent 60%), var(--bg-1)`;
+    const x = ((e.clientX - r.left) / r.width  * 100).toFixed(1);
+    const y = ((e.clientY - r.top)  / r.height * 100).toFixed(1);
+    card.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(99,102,241,.14) 0%, transparent 60%)`;
   });
   card.addEventListener('mouseleave', () => { card.style.background = ''; });
 });
-</script>
 
+/* ── Chip hover bounce ── */
+document.querySelectorAll('.chip:not(.muted)').forEach(chip => {
+  chip.addEventListener('mouseenter', () => {
+    animate(chip, { scale: [1, 1.07, 1] }, { duration: 320, ease: 'out(3)' });
+  });
+});
+
+/* ── Client pill hover ripple ── */
+document.querySelectorAll('.client-pill').forEach(pill => {
+  pill.addEventListener('mouseenter', () => {
+    animate(pill, { scale: [1, 1.05, 1] }, { duration: 260, ease: 'out(2)' });
+  });
+});
+
+/* ── Nav logo subtle pulse on load ── */
+animate('.logo', { scale: [0.9, 1] }, { duration: 600, ease: 'out(4)', delay: 200 });
+
+/* ── Hero badge pulse ── */
+animate('#hero-badge', { scale: [1, 1.03, 1] }, { loop: true, duration: 2800, ease: 'inOut(2)', delay: 2000 });
+
+/* ── Button hover micro-animation ── */
+document.querySelectorAll('.btn-primary').forEach(btn => {
+  btn.addEventListener('mouseenter', () => {
+    animate(btn, { scale: [1, 1.03] }, { duration: 180, ease: 'out(2)' });
+  });
+  btn.addEventListener('mouseleave', () => {
+    animate(btn, { scale: [1.03, 1] }, { duration: 220, ease: 'out(3)' });
+  });
+});
+</script>
 
 </body>
 </html>
