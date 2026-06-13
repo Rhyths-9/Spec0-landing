@@ -81,7 +81,8 @@ nav {
   backdrop-filter: blur(18px);
 }
 .nav-inner {
-  display: flex; align-items: center; height: 56px; gap: 0;
+  display: flex; align-items: center; height: 56px;
+  position: relative;
 }
 .nav-logo {
   display: inline-flex; align-items: center;
@@ -91,9 +92,12 @@ nav {
   line-height: 0;
   flex-shrink: 0;
 }
-.nav-links { display: flex; gap: 24px; font-size: .82rem; font-weight: 500; color: var(--body); }
+.nav-links {
+  display: flex; gap: 24px; font-size: .82rem; font-weight: 500; color: var(--body);
+  position: absolute; left: 50%; transform: translateX(-50%);
+}
 .nav-links a:hover { color: var(--ink); }
-.nav-right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+.nav-right { margin-left: auto; display: flex; gap: 12px; align-items: center; flex-shrink: 0; }
 .nav-signin { font-size: .82rem; color: var(--body); }
 .nav-signin:hover { color: var(--ink); }
 .btn {
