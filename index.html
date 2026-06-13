@@ -1005,16 +1005,26 @@ footer {
   100% { top: 100%; }
 }
 
-/* glyph row */
-.intro-glyphs {
+.intro-word {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 0;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: clamp(2.2rem, 7vw, 4.8rem);
+  font-weight: 300;
+  letter-spacing: .06em;
+  line-height: 1;
+  user-select: none;
 }
-.ig {
-  display: block;
-  overflow: visible;
+.intro-char {
+  display: inline-block;
+  color: rgba(124,111,247,.9);
+  min-width: .62em;
+  text-align: center;
 }
+.intro-char.accent { color: rgba(232,121,249,.9); }
+.intro-char.scrambling { color: rgba(124,111,247,.28); }
+.intro-char.resolved  { color: rgba(230,220,255,.8); }
+.intro-char.accent.resolved { color: rgba(240,171,252,.9); }
 
 .intro-corner {
   position: absolute;
@@ -1036,33 +1046,14 @@ footer {
   <div class="intro-corner tr"></div>
   <div class="intro-corner bl"></div>
   <div class="intro-corner br"></div>
-
-  <div class="intro-glyphs" id="intro-glyphs">
-    <!-- S -->
-    <svg class="ig" id="ig-s" viewBox="0 0 16.632 30" width="54" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path id="path-s" d="M8.316 24C3.276 24 0 24 0 18.672H3.24C3.24 20.76 5.076 20.76 8.316 20.76C11.556 20.76 13.392 20.76 13.392 18.672C13.392 16.656 11.664 16.62 8.64 16.62H8.172C4.392 16.62 0 16.584 0 11.328C0 6 3.276 6 8.316 6C13.356 6 16.632 6 16.632 11.328H13.392C13.392 9.24 11.556 9.24 8.316 9.24C5.076 9.24 3.24 9.24 3.24 11.328C3.24 13.344 4.968 13.38 7.992 13.38H8.46C12.24 13.38 16.632 13.416 16.632 18.672C16.632 24 13.356 24 8.316 24Z" fill="rgba(230,225,255,0)" stroke="rgba(230,225,255,0.55)" stroke-width="0.5"/>
-    </svg>
-    <!-- P -->
-    <svg class="ig" id="ig-p" viewBox="0 1 16.632 32" width="54" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path id="path-p" d="M0.0001 33V6H8.3161C16.5961 6 16.6321 15 16.6321 15C16.6321 15 16.5961 24 8.3161 24H3.2401V33H0.0001ZM3.2401 20.76H8.3161C13.3561 20.76 13.3921 15 13.3921 15C13.3921 15 13.3561 9.24 8.3161 9.24H3.2401V20.76Z" fill="rgba(230,225,255,0)" stroke="rgba(230,225,255,0.55)" stroke-width="0.5"/>
-    </svg>
-    <!-- E -->
-    <svg class="ig" id="ig-e" viewBox="0 0 16.632 30" width="54" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path id="path-e" d="M8.3162 24C3.2762 24 0.0002 24 0.0002 15C0.0002 6 3.2762 6 8.3162 6C13.3562 6 16.6322 6 16.6322 15V16.62H3.2402C3.2402 20.76 5.0762 20.76 8.3162 20.76H14.0122V24H8.3162ZM3.2402 13.38H13.3922C13.3922 9.24 11.5562 9.24 8.3162 9.24C5.0762 9.24 3.2402 9.24 3.2402 13.38Z" fill="rgba(230,225,255,0)" stroke="rgba(230,225,255,0.55)" stroke-width="0.5"/>
-    </svg>
-    <!-- C -->
-    <svg class="ig" id="ig-c" viewBox="0 0 16.632 30" width="54" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path id="path-c" d="M8.3162 24C3.2762 24 0.0002 20.76 0.0002 15C0.0002 9.24 3.2762 6 8.3162 6C11.5562 6 16.6322 6 16.6322 11.76H13.3922C13.3922 9.24 10.0442 9.24 8.3882 9.24H8.3162C5.0762 9.24 3.2402 11.76 3.2402 15C3.2402 18.24 5.0762 20.76 8.3162 20.76H8.3882C10.0442 20.76 13.3922 20.76 13.3922 18.24H16.6322C16.6322 24 11.5562 24 8.3162 24Z" fill="rgba(230,225,255,0)" stroke="rgba(230,225,255,0.55)" stroke-width="0.5"/>
-    </svg>
-    <!-- 0 + brackets -->
-    <svg class="ig" id="ig-0" viewBox="80 0 28 33" width="90" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path id="path-lb" d="M83.8259 30C81.7129 30 80 28.0102 80 25.5556V4.44444C80 1.98985 81.7129 0 83.8259 0H90.4845C91.0331 0 90.9995 0.47386 90.9995 1.11111C90.9995 1.74836 91.0486 2 90.5 2H85C82.887 2 81.913 3.10096 81.913 5.55556V24.4444C81.913 26.9124 82.8756 28.019 85 28H90.4883C91.0377 27.9951 90.9995 28.2506 90.9995 28.8889C90.9995 29.5237 91.0348 30 90.4883 30H83.8259Z" fill="rgba(91,76,245,0)" stroke="rgba(124,111,247,0.7)" stroke-width="0.5"/>
-      <path id="path-zero" d="M94 24C89.7576 24 87 24 87 15C87 6 89.7576 6 94 6C98.2424 6 101 6 101 15C101 24 98.2424 24 94 24ZM89.8788 18.024L97.2424 9.12C96.5758 8.256 95.7576 8.16 94 8.16C91.2727 8.16 89.7273 8.16 89.7273 15C89.7273 16.224 89.7879 17.208 89.8788 18.024ZM94 21.84C96.7273 21.84 98.2727 21.84 98.2727 15C98.2727 13.776 98.2121 12.816 98.1212 12L90.7576 20.88C91.4242 21.744 92.303 21.84 94 21.84Z" fill="rgba(91,76,245,0)" stroke="rgba(124,111,247,0.7)" stroke-width="0.5"/>
-      <path id="path-rb" d="M104.174 30C106.287 30 108 28.0102 108 25.5556V4.44444C108 1.98985 106.287 0 104.174 0H97.5155C96.9669 0 97.0005 0.47386 97.0005 1.11111C97.0005 1.74836 96.9514 2 97.5 2H103C105.113 2 106.087 3.10096 106.087 5.55556V24.4444C106.087 26.9124 105.124 28.019 103 28H97.5117C96.9623 27.9951 97.0005 28.2506 97.0005 28.8889C97.0005 29.5237 96.9652 30 97.5117 30H104.174Z" fill="rgba(91,76,245,0)" stroke="rgba(124,111,247,0.7)" stroke-width="0.5"/>
-    </svg>
+  <div class="intro-word" id="intro-word">
+    <span class="intro-char" data-final="s">s</span>
+    <span class="intro-char" data-final="p">p</span>
+    <span class="intro-char" data-final="e">e</span>
+    <span class="intro-char" data-final="c">c</span>
+    <span class="intro-char accent" data-final="0">0</span>
   </div>
-
-  <!-- final full logo crossfades in after animation -->
+  <!-- Real SVG logo, shown after scramble resolves -->
   <div id="intro-logo" style="opacity:0;transition:opacity .5s ease;position:absolute">
     <svg width="180" height="55" viewBox="0 0 108 33" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M8.316 24C3.276 24 0 24 0 18.672H3.24C3.24 20.76 5.076 20.76 8.316 20.76C11.556 20.76 13.392 20.76 13.392 18.672C13.392 16.656 11.664 16.62 8.64 16.62H8.172C4.392 16.62 0 16.584 0 11.328C0 6 3.276 6 8.316 6C13.356 6 16.632 6 16.632 11.328H13.392C13.392 9.24 11.556 9.24 8.316 9.24C5.076 9.24 3.24 9.24 3.24 11.328C3.24 13.344 4.968 13.38 7.992 13.38H8.46C12.24 13.38 16.632 13.416 16.632 18.672C16.632 24 13.356 24 8.316 24Z" fill="white"/>
@@ -1083,103 +1074,72 @@ footer {
     return;
   }
 
-  const STAGGER    = 110;
-  const FLICKER    = 5;
-  const HOLD_AFTER = 900;
+  const CHARS = '+-=;*~#@$%^&!?<>/|\\[]{}0123456789';
+  const SCRAMBLE_DURATION = 380;
+  const STAGGER           = 90;
+  const HOLD_AFTER        = 900;
+  const chars  = Array.from(document.querySelectorAll('.intro-char'));
+  const intro  = document.getElementById('intro');
 
-  const glyphs = [
-    { svg: 'ig-s',  paths: ['path-s'],                      white: true },
-    { svg: 'ig-p',  paths: ['path-p'],                      white: true },
-    { svg: 'ig-e',  paths: ['path-e'],                      white: true },
-    { svg: 'ig-c',  paths: ['path-c'],                      white: true },
-    { svg: 'ig-0',  paths: ['path-lb','path-zero','path-rb'], white: false },
-  ];
+  function randChar() {
+    return CHARS[Math.floor(Math.random() * CHARS.length)];
+  }
 
-  // set up stroke-dasharray for draw-on effect
-  glyphs.forEach(g => {
-    g.paths.forEach(id => {
-      const el = document.getElementById(id);
-      try {
-        const len = el.getTotalLength();
-        el.style.strokeDasharray  = len;
-        el.style.strokeDashoffset = len;
-      } catch(e) {
-        el.style.strokeDasharray  = 300;
-        el.style.strokeDashoffset = 300;
-      }
-    });
-    document.getElementById(g.svg).style.opacity = '0';
-  });
-
-  function flickerIn(glyph) {
+  function scrambleChar(el, finalChar, duration) {
     return new Promise(resolve => {
-      const svgEl   = document.getElementById(glyph.svg);
-      const pathEls = glyph.paths.map(id => document.getElementById(id));
-      const fillFinal  = glyph.white ? 'rgba(230,225,255,1)' : 'rgba(91,76,245,1)';
-
-      // show the SVG
-      svgEl.style.opacity = '1';
-
-      // flicker opacity fast
-      let tick = 0;
-      const flicker = setInterval(() => {
-        tick++;
-        svgEl.style.opacity = tick % 2 === 0 ? '0.08' : '0.85';
-        if (tick >= FLICKER * 2) {
-          clearInterval(flicker);
-          svgEl.style.opacity = '1';
-          // draw stroke in
-          pathEls.forEach(el => {
-            el.style.transition = 'stroke-dashoffset 0.5s cubic-bezier(0.16,1,0.3,1)';
-            el.style.strokeDashoffset = '0';
-          });
-          // fill solid after draw
-          setTimeout(() => {
-            pathEls.forEach(el => {
-              el.style.transition = 'fill 0.25s ease, stroke-opacity 0.25s ease';
-              el.style.fill = fillFinal;
-              el.style.strokeOpacity = '0';
-            });
-            resolve();
-          }, 530);
+      el.classList.add('scrambling');
+      const interval = 40;
+      const steps = Math.floor(duration / interval);
+      let count = 0;
+      const tick = setInterval(() => {
+        el.textContent = randChar();
+        count++;
+        if (count >= steps) {
+          clearInterval(tick);
+          el.textContent = finalChar;
+          el.classList.remove('scrambling');
+          el.classList.add('resolved');
+          resolve();
         }
-      }, 50);
+      }, interval);
     });
   }
 
   async function runIntro() {
-    await new Promise(r => setTimeout(r, 250));
+    await new Promise(r => setTimeout(r, 200));
 
-    const promises = glyphs.map((g, i) =>
-      new Promise(r => setTimeout(() => flickerIn(g).then(r), i * STAGGER))
+    const promises = chars.map((el, i) =>
+      new Promise(r => setTimeout(() =>
+        scrambleChar(el, el.dataset.final, SCRAMBLE_DURATION).then(r),
+      i * STAGGER))
     );
     await Promise.all(promises);
 
-    // glitch: flash all together
-    await new Promise(r => setTimeout(r, 280));
-    const allSvgs = glyphs.map(g => document.getElementById(g.svg));
-    let gt = 0;
-    const glitch = setInterval(() => {
-      gt++;
-      allSvgs.forEach(s => { s.style.opacity = gt % 2 === 0 ? '0.05' : '1'; });
-      if (gt >= 6) { clearInterval(glitch); allSvgs.forEach(s => { s.style.opacity = '1'; }); }
-    }, 50);
-    await new Promise(r => setTimeout(r, 360));
+    await new Promise(r => setTimeout(r, 500));
 
-    // crossfade to full logo
-    const glyphsEl = document.getElementById('intro-glyphs');
-    const logoEl   = document.getElementById('intro-logo');
-    glyphsEl.style.transition = 'opacity 0.4s ease';
-    glyphsEl.style.opacity    = '0';
+    // glitch pass
+    const glitchTick = setInterval(() => {
+      chars.forEach(el => { if (Math.random() > 0.5) el.textContent = randChar(); });
+    }, 40);
     await new Promise(r => setTimeout(r, 180));
+    clearInterval(glitchTick);
+    chars.forEach(el => { el.textContent = el.dataset.final; });
+
+    // crossfade: fade out scramble text, fade in real SVG logo
+    await new Promise(r => setTimeout(r, 300));
+    const wordEl = document.getElementById('intro-word');
+    const logoEl = document.getElementById('intro-logo');
+    wordEl.style.transition = 'opacity .4s ease';
+    wordEl.style.opacity = '0';
+    await new Promise(r => setTimeout(r, 200));
     logoEl.style.opacity = '1';
+
     await new Promise(r => setTimeout(r, HOLD_AFTER));
 
-    const intro = document.getElementById('intro');
     intro.classList.add('fade-out');
     setTimeout(() => {
       intro.style.display = 'none';
-      document.body.style.overflow = '';
+      document.body.style.overflow = ''; // always clear here as fallback
       document.querySelectorAll('.r').forEach(el => {
         if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('in');
       });
@@ -1187,9 +1147,11 @@ footer {
   }
 
   document.body.style.overflow = 'hidden';
-  const intro = document.getElementById('intro');
-  intro.addEventListener('transitionend', () => { document.body.style.overflow = ''; }, { once: true });
-  setTimeout(() => { document.body.style.overflow = ''; }, 5500);
+  // clear overflow on transitionend AND as a hard fallback after max intro time
+  intro.addEventListener('transitionend', () => {
+    document.body.style.overflow = '';
+  }, { once: true });
+  setTimeout(() => { document.body.style.overflow = ''; }, 4500); // hard fallback
 
   runIntro();
 })();
